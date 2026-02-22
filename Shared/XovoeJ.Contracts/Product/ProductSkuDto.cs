@@ -31,9 +31,19 @@ namespace XovoeJ.Contracts.Product
         public decimal? OriginalPrice { get; set; }
 
         /// <summary>
+        /// 成本价
+        /// </summary>
+        public decimal? CostPrice { get; set; }
+
+        /// <summary>
         /// 库存
         /// </summary>
         public int Stock { get; set; }
+
+        /// <summary>
+        /// 低库存预警
+        /// </summary>
+        public int LowStock { get; set; } = 10;
 
         /// <summary>
         /// 销量

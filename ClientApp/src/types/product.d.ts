@@ -1,26 +1,51 @@
 declare namespace Api {
   namespace Product {
+    interface ProductSku {
+      id: string
+      skuCode: string
+      specs?: Record<string, string>
+      price: number
+      originalPrice?: number
+      costPrice?: number
+      stock: number
+      lowStock: number
+      salesCount: number
+      image?: string
+    }
+
     interface Product {
       id: string
-      name: string
-      description?: string
-      price: number
-      stock: number
-      categoryId?: string
+      categoryId: string
       categoryName?: string
-      coverImage?: string
-      images?: string[]
-      status: number // 0-下架 1-上架
-      createdAt?: string
-      updatedAt?: string
+      name: string
+      subtitle?: string
+      description?: string
+      mainImage?: string
+      images: string[]
+      detail?: string
+      salesCount: number
+      browseCount: number
+      isEnabled: boolean
+      isHot: boolean
+      isNew: boolean
+      isRecommend: boolean
+      createdAt: string
+      skus: ProductSku[]
+      minPrice?: number
+      maxPrice?: number
+      totalStock: number
     }
 
     interface ProductListParams {
       page: number
       pageSize: number
-      keyword?: string
       categoryId?: string
-      status?: number
+      keyword?: string
+      isHot?: boolean
+      isNew?: boolean
+      isRecommend?: boolean
+      priceSort?: 'asc' | 'desc'
+      salesSort?: 'asc' | 'desc'
     }
 
     interface ProductListResponse {
@@ -28,28 +53,59 @@ declare namespace Api {
       total: number
       page: number
       pageSize: number
+      totalPages: number
     }
 
     interface CreateProductRequest {
+      categoryId: string
       name: string
+      subtitle?: string
       description?: string
-      price: number
-      stock: number
-      categoryId?: string
-      coverImage?: string
+      mainImage?: string
       images?: string[]
-      status: number
+      detail?: string
+      tags?: string[]
+      isHot: boolean
+      isNew: boolean
+      isRecommend: boolean
+      skus: CreateProductSkuRequest[]
+    }
+
+    interface CreateProductSkuRequest {
+      skuCode: string
+      specs?: Record<string, string>
+      price: number
+      originalPrice?: number
+      costPrice?: number
+      stock: number
+      lowStock: number
+      image?: string
     }
 
     interface UpdateProductRequest {
-      name?: string
+      categoryId: string
+      name: string
+      subtitle?: string
       description?: string
-      price?: number
-      stock?: number
-      categoryId?: string
-      coverImage?: string
+      mainImage?: string
       images?: string[]
-      status?: number
+      detail?: string
+      isEnabled: boolean
+      isHot: boolean
+      isNew: boolean
+      isRecommend: boolean
+      skus: UpdateProductSkuRequest[]
+    }
+
+    interface UpdateProductSkuRequest {
+      skuCode: string
+      specs?: Record<string, string>
+      price: number
+      originalPrice?: number
+      costPrice?: number
+      stock: number
+      lowStock: number
+      image?: string
     }
   }
 }

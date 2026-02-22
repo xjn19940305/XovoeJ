@@ -3,33 +3,34 @@ declare namespace Api {
     interface Category {
       id: string
       name: string
-      description?: string
-      icon?: string
-      sort: number
       parentId?: string
-      parentName?: string
-      createdAt?: string
-      updatedAt?: string
+      level: number
+      path?: string
+      icon?: string
+      image?: string
+      sortOrder: number
+      isEnabled: boolean
+      children?: Category[]
     }
 
     interface CategoryTreeNode extends Category {
-      children?: CategoryTreeNode[]
+      children: CategoryTreeNode[]
     }
 
     interface CreateCategoryRequest {
       name: string
-      description?: string
-      icon?: string
-      sort: number
       parentId?: string
+      icon?: string
+      image?: string
+      sortOrder: number
     }
 
     interface UpdateCategoryRequest {
-      name?: string
-      description?: string
+      name: string
       icon?: string
-      sort?: number
-      parentId?: string
+      image?: string
+      sortOrder: number
+      isEnabled: boolean
     }
   }
 }

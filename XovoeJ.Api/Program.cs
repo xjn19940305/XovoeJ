@@ -21,6 +21,8 @@ using XovoeJ.Application.Services;
 using XovoeJ.Entities;
 using XovoeJ.Infrastructure.Filters;
 using XovoeJ.Persistence.PostgreSql;
+using XovoeJ.Storage.Minio;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
@@ -254,7 +256,7 @@ builder.Services.AddSwaggerGen(c =>
             if (actionFilter != null && !actionFilter.Igrone)
             {
                 return actionFilter.GroupName.Any(x => x.ToString().Equals(docName, StringComparison.OrdinalIgnoreCase));
-            }   
+            }
             return false;
         }
         return false;
@@ -344,6 +346,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
+builder.Services.AddMinioService(builder.Configuration);
 
 
 var app = builder.Build();

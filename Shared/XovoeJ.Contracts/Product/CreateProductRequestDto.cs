@@ -83,7 +83,7 @@ namespace XovoeJ.Contracts.Product
         public string SkuCode { get; set; } = string.Empty;
 
         /// <summary>
-        /// 规格属性
+        /// 规格属性（自定义规格，如：{"颜色": "红色", "尺寸": "XL"}）
         /// </summary>
         public Dictionary<string, string>? Specs { get; set; }
 

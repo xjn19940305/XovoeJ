@@ -10,10 +10,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Folder Include="Controllers\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
 		<PackageReference Include="IGeekFan.AspNetCore.Knife4jUI" Version="0.0.16" />
 		<PackageReference Include="Npgsql" Version="9.0.3" />
@@ -48,6 +44,7 @@
 	  <ProjectReference Include="..\Infrastructure\XovoeJ.Infrastructure\XovoeJ.Infrastructure.csproj" />
 	  <ProjectReference Include="..\Infrastructure\XovoeJ.Persistence.PostgreSql\XovoeJ.Persistence.PostgreSql.csproj" />
 	  <ProjectReference Include="..\Infrastructure\XovoeJ.SignalR\XovoeJ.SignalR.csproj" />
+	  <ProjectReference Include="..\Infrastructure\XovoeJ.Storage.Minio\XovoeJ.Storage.Minio.csproj" />
 	  <ProjectReference Include="..\Shared\XovoeJ.Abstractions\XovoeJ.Abstractions.csproj" />
 	  <ProjectReference Include="..\Shared\XovoeJ.Contracts\XovoeJ.Contracts.csproj" />
 	  <ProjectReference Include="..\Shared\XovoeJ.Enum\XovoeJ.Enum.csproj" />

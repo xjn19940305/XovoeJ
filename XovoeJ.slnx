@@ -9,6 +9,7 @@
     <Project Path="Infrastructure/XovoeJ.Infrastructure/XovoeJ.Infrastructure.csproj" Id="5944ec07-3e6b-4d9b-96ca-859a08d45e08" />
     <Project Path="Infrastructure/XovoeJ.Persistence.PostgreSql/XovoeJ.Persistence.PostgreSql.csproj" Id="651ad6a7-b7f5-4edb-94a4-9a44b143e9a9" />
     <Project Path="Infrastructure/XovoeJ.SignalR/XovoeJ.SignalR.csproj" Id="865a6065-3179-4360-a848-3bec9eb10e44" />
+    <Project Path="Infrastructure/XovoeJ.Storage.Minio/XovoeJ.Storage.Minio.csproj" Id="52e9f148-caf2-44fc-ba19-ed9bffe7c86f" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="Shared/XovoeJ.Abstractions/XovoeJ.Abstractions.csproj" Id="9878943a-4c05-4926-b00e-6b250703321e" />

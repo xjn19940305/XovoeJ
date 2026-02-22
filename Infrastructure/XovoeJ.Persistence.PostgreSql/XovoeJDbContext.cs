@@ -1,13 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 using XovoeJ.Entities;
 
 namespace XovoeJ.Persistence.PostgreSql
@@ -18,12 +10,9 @@ namespace XovoeJ.Persistence.PostgreSql
         public DbSet<Category> Categories { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductSku> ProductSkus { get; set; }
-        public DbSet<SpecGroup> SpecGroups { get; set; }
-        public DbSet<SpecValue> SpecValues { get; set; }
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
-
 
         public XovoeJDbContext(DbContextOptions options) : base(options)
         {
@@ -71,19 +60,6 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(s => s.Stock);
             });
 
-            // SpecGroup 配置
-            modelBuilder.Entity<SpecGroup>(build =>
-            {
-                build.HasIndex(s => s.SortOrder);
-            });
-
-            // SpecValue 配置
-            modelBuilder.Entity<SpecValue>(build =>
-            {
-                build.HasIndex(s => s.SpecGroupId);
-                build.HasIndex(s => s.SortOrder);
-            });
-
             // ShoppingCart 配置
             modelBuilder.Entity<ShoppingCart>(build =>
             {
@@ -108,7 +84,6 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(o => o.OrderId);
                 build.HasIndex(o => o.ProductId);
             });
-
         }
     }
 }

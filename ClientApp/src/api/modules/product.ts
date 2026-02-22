@@ -15,7 +15,4 @@ export default {
 
   // 删除商品
   delete: (id: string) => api.delete(`api/products/${id}`),
-
-  // 上架/下架
-  updateStatus: (id: string, status: number) => api.patch(`api/products/${id}/status`, { status }),
 }

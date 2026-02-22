@@ -17,6 +17,9 @@ const searchForm = ref({
 const tableData = ref<Api.Category.Category[]>([])
 const loading = ref(false)
 
+// 分类树数据
+const categoryTree = ref<Api.Category.CategoryTreeNode[]>([])
+
 // 对话框
 const dialogVisible = ref(false)
 const dialogTitle = ref('创建分类')
@@ -24,9 +27,9 @@ const dialogLoading = ref(false)
 const editingCategoryId = ref<string>()
 const formData = ref<Api.Category.CreateCategoryRequest>({
   name: '',
-  description: '',
   icon: '',
-  sort: 0,
+  image: '',
+  sortOrder: 0,
   parentId: '',
 })
 
@@ -52,6 +55,12 @@ async function getCategoryList() {
   }
 }
 
+// 获取分类树
+async function getCategoryTree() {
+  const res = await categoryApi.getTree()
+  categoryTree.value = res.data
+}
+
 // 搜索
 function handleSearch() {
   getCategoryList()
@@ -71,9 +80,9 @@ function handleCreate() {
   editingCategoryId.value = undefined
   formData.value = {
     name: '',
-    description: '',
     icon: '',
-    sort: 0,
+    image: '',
+    sortOrder: 0,
     parentId: '',
   }
   dialogVisible.value = true
@@ -90,9 +99,9 @@ async function handleEdit(row: Api.Category.Category) {
     const data = res.data
     formData.value = {
       name: data.name,
-      description: data.description,
       icon: data.icon,
-      sort: data.sort,
+      image: data.image,
+      sortOrder: data.sortOrder,
       parentId: data.parentId,
     }
   }
@@ -103,12 +112,13 @@ async function handleEdit(row: Api.Category.Category) {
 
 // 删除分类
 async function handleDelete(id: string) {
-  await ElMessageBox.confirm('确定要删除该分类吗？', '提示', {
+  await ElMessageBox.confirm('确定要删除该分类吗？删除后子分类也会被删除。', '提示', {
     type: 'warning',
   })
   await categoryApi.delete(id)
   ElMessage.success('删除成功')
   getCategoryList()
+  getCategoryTree()
 }
 
 // 提交表单
@@ -117,23 +127,41 @@ async function handleSubmit() {
   dialogLoading.value = true
   try {
     if (editingCategoryId.value) {
-      await categoryApi.update(editingCategoryId.value, formData.value)
+      await categoryApi.update(editingCategoryId.value, {
+        name: formData.value.name,
+        icon: formData.value.icon,
+        image: formData.value.image,
+        sortOrder: formData.value.sortOrder,
+        isEnabled: true,
+      })
       ElMessage.success('修改成功')
     }
     else {
-      await categoryApi.create(formData.value)
+      // 处理 parentId，空字符串转为 null
+      const submitData = {
+        ...formData.value,
+        parentId: formData.value.parentId || undefined,
+      }
+      await categoryApi.create(submitData)
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
     getCategoryList()
+    getCategoryTree()
   }
   finally {
     dialogLoading.value = false
   }
 }
 
+// 格式化分类层级
+function getCategoryLevel(level: number) {
+  return '　'.repeat(level) + (level > 0 ? '└ ' : '')
+}
+
 onMounted(() => {
   getCategoryList()
+  getCategoryTree()
 })
 </script>
 
@@ -173,39 +201,81 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 表格 -->
-    <FaCard>
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-        row-key="id"
-      >
-        <el-table-column prop="name" label="分类名称" min-width="150" />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="sort" label="排序" width="100" />
-        <el-table-column label="创建时间" min-width="180">
-          <template #default="{ row }">
-            {{ row.createdAt ? dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
+    <div class="flex gap-4">
+      <!-- 左侧：分类树 -->
+      <div class="w-72 flex-shrink-0">
+        <FaCard>
+          <template #header>
+            <span class="font-medium">分类树</span>
           </template>
-        </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleEdit(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:edit-pencil" />
+          <el-tree
+            :data="categoryTree"
+            :props="{ children: 'children', label: 'name' }"
+            node-key="id"
+            default-expand-all
+          >
+            <template #default="{ node, data }">
+              <span class="flex items-center">
+                <FaIcon v-if="data.icon" :name="data.icon" class="mr-2" />
+                <span>{{ node.label }}</span>
+                <el-tag v-if="!data.isEnabled" size="small" type="info" class="ml-2">禁用</el-tag>
+              </span>
+            </template>
+          </el-tree>
+        </FaCard>
+      </div>
+
+      <!-- 右侧：分类列表 -->
+      <div class="flex-1">
+        <FaCard>
+          <el-table
+            v-loading="loading"
+            :data="tableData"
+            row-key="id"
+          >
+            <el-table-column prop="name" label="分类名称" min-width="200">
+              <template #default="{ row }">
+                <span>{{ getCategoryLevel(row.level) }}{{ row.name }}</span>
               </template>
-              编辑
-            </FaButton>
-            <FaButton variant="ghost" size="sm" class="text-red-500" @click="handleDelete(row.id)">
-              <template #icon>
-                <FaIcon name="i-iconoir:trash" />
+            </el-table-column>
+            <el-table-column label="图标" width="80">
+              <template #default="{ row }">
+                <FaIcon v-if="row.icon" :name="row.icon" class="size-5" />
               </template>
-              删除
-            </FaButton>
-          </template>
-        </el-table-column>
-      </el-table>
-    </FaCard>
+            </el-table-column>
+            <el-table-column prop="sortOrder" label="排序" width="100" />
+            <el-table-column label="状态" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.isEnabled ? 'success' : 'info'" size="small">
+                  {{ row.isEnabled ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="创建时间" width="180">
+              <template #default="{ row }">
+                {{ row.createdAt ? dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="150" fixed="right">
+              <template #default="{ row }">
+                <FaButton variant="ghost" size="sm" @click="handleEdit(row)">
+                  <template #icon>
+                    <FaIcon name="i-iconoir:edit-pencil" />
+                  </template>
+                  编辑
+                </FaButton>
+                <FaButton variant="ghost" size="sm" class="text-red-500" @click="handleDelete(row.id)">
+                  <template #icon>
+                    <FaIcon name="i-iconoir:trash" />
+                  </template>
+                  删除
+                </FaButton>
+              </template>
+            </el-table-column>
+          </el-table>
+        </FaCard>
+      </div>
+    </div>
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
@@ -224,14 +294,37 @@ onMounted(() => {
         <el-form-item label="分类名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入分类名称" />
         </el-form-item>
-        <el-form-item label="分类描述">
-          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入分类描述" />
+        <el-form-item label="父分类">
+          <el-select
+            v-model="formData.parentId"
+            placeholder="请选择父分类（不选则为顶级分类）"
+            clearable
+            class="w-full"
+          >
+            <el-option
+              v-for="item in categoryTree"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+            <template v-for="parent in categoryTree" :key="parent.id">
+              <el-option
+                v-for="child in parent.children"
+                :key="child.id"
+                :label="`　${child.name}`"
+                :value="child.id"
+              />
+            </template>
+          </el-select>
         </el-form-item>
         <el-form-item label="图标">
           <el-input v-model="formData.icon" placeholder="请输入图标类名" />
         </el-form-item>
+        <el-form-item label="图片">
+          <el-input v-model="formData.image" placeholder="请输入图片URL" />
+        </el-form-item>
         <el-form-item label="排序">
-          <el-input-number v-model="formData.sort" :min="0" :max="9999" />
+          <el-input-number v-model="formData.sortOrder" :min="0" :max="9999" />
         </el-form-item>
       </el-form>
       <template #footer>

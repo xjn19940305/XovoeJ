@@ -1,11 +1,11 @@
 import api from '../index'
 
 export default {
-  // 获取分类列表（树形）
-  getTree: () => api.get<Api.Category.CategoryTreeNode[]>('api/categories/tree'),
-
-  // 获取分类列表（平铺）
+  // 获取分类列表
   getList: () => api.get<Api.Category.Category[]>('api/categories'),
+
+  // 获取分类树
+  getTree: () => api.get<Api.Category.CategoryTreeNode[]>('api/categories/tree'),
 
   // 获取分类详情
   getDetail: (id: string) => api.get<Api.Category.Category>(`api/categories/${id}`),

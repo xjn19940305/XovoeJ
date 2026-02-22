@@ -8,6 +8,12 @@ namespace XovoeJ.Contracts.Product
     public class UpdateProductRequestDto
     {
         /// <summary>
+        /// 商品分类ID
+        /// </summary>
+        [Required(ErrorMessage = "商品分类不能为空")]
+        public string CategoryId { get; set; } = string.Empty;
+
+        /// <summary>
         /// 商品名称
         /// </summary>
         [Required(ErrorMessage = "商品名称不能为空")]
@@ -61,5 +67,61 @@ namespace XovoeJ.Contracts.Product
         /// 是否推荐
         /// </summary>
         public bool IsRecommend { get; set; }
+
+        /// <summary>
+        /// SKU列表
+        /// </summary>
+        public List<UpdateProductSkuDto>? Skus { get; set; }
+    }
+
+    /// <summary>
+    /// 更新商品SKU请求DTO
+    /// </summary>
+    public class UpdateProductSkuDto
+    {
+        /// <summary>
+        /// SKU编码
+        /// </summary>
+        [Required(ErrorMessage = "SKU编码不能为空")]
+        [MaxLength(64)]
+        public string SkuCode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 规格属性
+        /// </summary>
+        public Dictionary<string, string>? Specs { get; set; }
+
+        /// <summary>
+        /// 价格
+        /// </summary>
+        [Required(ErrorMessage = "价格不能为空")]
+        public decimal Price { get; set; }
+
+        /// <summary>
+        /// 原价
+        /// </summary>
+        public decimal? OriginalPrice { get; set; }
+
+        /// <summary>
+        /// 成本价
+        /// </summary>
+        public decimal? CostPrice { get; set; }
+
+        /// <summary>
+        /// 库存
+        /// </summary>
+        [Required(ErrorMessage = "库存不能为空")]
+        public int Stock { get; set; }
+
+        /// <summary>
+        /// 低库存预警
+        /// </summary>
+        public int LowStock { get; set; } = 10;
+
+        /// <summary>
+        /// SKU图片
+        /// </summary>
+        [MaxLength(512)]
+        public string? Image { get; set; }
     }
 }

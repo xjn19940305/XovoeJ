@@ -345,6 +345,14 @@ namespace XovoeJ.Application.Services
                 return null;
             }
 
+            // 验证分类是否存在
+            var category = await _dbContext.Categories.FindAsync(request.CategoryId);
+            if (category == null)
+            {
+                throw new ArgumentException("分类不存在");
+            }
+
+            product.CategoryId = request.CategoryId;
             product.Name = request.Name;
             product.Subtitle = request.Subtitle;
             product.Description = request.Description;
@@ -357,9 +365,66 @@ namespace XovoeJ.Application.Services
             product.IsRecommend = request.IsRecommend;
             product.UpdatedAt = DateTime.UtcNow;
 
+            // 更新 SKU（根据 SkuCode 匹配，保留 ID 不变）
+            if (request.Skus != null)
+            {
+                var existingSkus = await _dbContext.ProductSkus
+                    .Where(s => s.ProductId == productId)
+                    .ToListAsync();
+
+                foreach (var skuDto in request.Skus)
+                {
+                    var existingSku = existingSkus.FirstOrDefault(s => s.SkuCode == skuDto.SkuCode);
+
+                    if (existingSku != null)
+                    {
+                        // 更新现有 SKU（保留 ID）
+                        existingSku.Specs = skuDto.Specs != null ? JsonSerializer.Serialize(skuDto.Specs) : null;
+                        existingSku.Price = skuDto.Price;
+                        existingSku.OriginalPrice = skuDto.OriginalPrice;
+                        existingSku.CostPrice = skuDto.CostPrice;
+                        existingSku.Stock = skuDto.Stock;
+                        existingSku.LowStock = skuDto.LowStock;
+                        existingSku.Image = skuDto.Image;
+                    }
+                    else
+                    {
+                        // 添加新 SKU
+                        var sku = new ProductSku
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            ProductId = productId,
+                            SkuCode = skuDto.SkuCode,
+                            Specs = skuDto.Specs != null ? JsonSerializer.Serialize(skuDto.Specs) : null,
+                            Price = skuDto.Price,
+                            OriginalPrice = skuDto.OriginalPrice,
+                            CostPrice = skuDto.CostPrice,
+                            Stock = skuDto.Stock,
+                            LowStock = skuDto.LowStock,
+                            Image = skuDto.Image,
+                        };
+                        await _dbContext.ProductSkus.AddAsync(sku);
+                    }
+                }
+
+                // 删除不在更新列表中的 SKU
+                var updatedSkuCodes = request.Skus.Select(s => s.SkuCode).ToHashSet();
+                var skusToDelete = existingSkus.Where(s => !updatedSkuCodes.Contains(s.SkuCode)).ToList();
+                _dbContext.ProductSkus.RemoveRange(skusToDelete);
+            }
+
             await _dbContext.SaveChangesAsync();
+
+            // 重新加载包含新分类的商品
+            product = await _dbContext.Products
+                .Include(p => p.Category)
+                .Include(p => p.Skus)
+                .FirstAsync(p => p.Id == product.Id);
+
             return MapToProductDto(product);
         }
+
+
 
         /// <summary>
         /// 删除商品
@@ -451,7 +516,9 @@ namespace XovoeJ.Application.Services
                     Specs = !string.IsNullOrEmpty(s.Specs) ? JsonSerializer.Deserialize<Dictionary<string, string>>(s.Specs) : null,
                     Price = s.Price,
                     OriginalPrice = s.OriginalPrice,
+                    CostPrice = s.CostPrice,
                     Stock = s.Stock,
+                    LowStock = s.LowStock,
                     SalesCount = s.SalesCount,
                     Image = s.Image
                 }).ToList()

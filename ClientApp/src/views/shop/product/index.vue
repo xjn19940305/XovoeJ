@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import productApi from '@/api/modules/product'
 import categoryApi from '@/api/modules/category'
 import dayjs from 'dayjs'
@@ -9,11 +9,15 @@ defineOptions({
   name: 'ShopProductList',
 })
 
+const router = useRouter()
+
 // 搜索表单
 const searchForm = ref({
   keyword: '',
   categoryId: '',
-  status: undefined as number | undefined,
+  isHot: undefined as boolean | undefined,
+  isNew: undefined as boolean | undefined,
+  isRecommend: undefined as boolean | undefined,
 })
 
 // 表格数据
@@ -27,48 +31,20 @@ const pageSize = ref(20)
 const selectedRows = ref<Api.Product.Product[]>([])
 const selectedIds = computed(() => selectedRows.value.map(item => item.id))
 
-// 对话框
-const dialogVisible = ref(false)
-const dialogTitle = ref('创建商品')
-const dialogLoading = ref(false)
-const editingProductId = ref<string>()
-const formData = ref<Api.Product.CreateProductRequest>({
-  name: '',
-  description: '',
-  price: 0,
-  stock: 0,
-  categoryId: '',
-  coverImage: '',
-  images: [],
-  status: 1,
+// 分类树数据
+const categoryTreeData = ref<Api.Category.CategoryTreeNode[]>([])
+
+// 分类树选项
+const categoryTreeOptions = computed(() => {
+  function buildTree(items: Api.Category.CategoryTreeNode[]) {
+    return items.map(item => ({
+      value: item.id,
+      label: item.name,
+      children: item.children?.length ? buildTree(item.children) : undefined,
+    }))
+  }
+  return buildTree(categoryTreeData.value)
 })
-
-// 分类选项
-const categoryOptions = ref<Api.Category.Category[]>([])
-
-// 表单引用
-const formRef = ref<FormInstance>()
-
-// 表单验证规则
-const rules: FormRules = {
-  name: [
-    { required: true, message: '请输入商品名称', trigger: 'blur' },
-  ],
-  price: [
-    { required: true, message: '请输入商品价格', trigger: 'blur' },
-    { type: 'number', min: 0, message: '价格不能小于0', trigger: 'blur' },
-  ],
-  stock: [
-    { required: true, message: '请输入库存数量', trigger: 'blur' },
-    { type: 'number', min: 0, message: '库存不能小于0', trigger: 'blur' },
-  ],
-}
-
-// 订单状态映射
-const statusMap: Record<number, { label: string; type: any }> = {
-  0: { label: '下架', type: 'info' },
-  1: { label: '上架', type: 'success' },
-}
 
 // 获取商品列表
 async function getProductList() {
@@ -88,10 +64,10 @@ async function getProductList() {
   }
 }
 
-// 获取分类列表
-async function getCategoryList() {
-  const res = await categoryApi.getList()
-  categoryOptions.value = res.data
+// 获取分类树
+async function getCategoryTree() {
+  const res = await categoryApi.getTree()
+  categoryTreeData.value = res.data
 }
 
 // 搜索
@@ -105,52 +81,22 @@ function handleReset() {
   searchForm.value = {
     keyword: '',
     categoryId: '',
-    status: undefined,
+    isHot: undefined,
+    isNew: undefined,
+    isRecommend: undefined,
   }
   currentPage.value = 1
   getProductList()
 }
 
-// 打开创建对话框
+// 打开创建页面
 function handleCreate() {
-  dialogTitle.value = '创建商品'
-  editingProductId.value = undefined
-  formData.value = {
-    name: '',
-    description: '',
-    price: 0,
-    stock: 0,
-    categoryId: '',
-    coverImage: '',
-    images: [],
-    status: 1,
-  }
-  dialogVisible.value = true
+  router.push('/shop/product/create')
 }
 
-// 打开编辑对话框
-async function handleEdit(row: Api.Product.Product) {
-  dialogTitle.value = '修改商品'
-  editingProductId.value = row.id
-  dialogLoading.value = true
-  dialogVisible.value = true
-  try {
-    const res = await productApi.getDetail(row.id)
-    const data = res.data
-    formData.value = {
-      name: data.name,
-      description: data.description,
-      price: data.price,
-      stock: data.stock,
-      categoryId: data.categoryId,
-      coverImage: data.coverImage,
-      images: data.images,
-      status: data.status,
-    }
-  }
-  finally {
-    dialogLoading.value = false
-  }
+// 打开编辑页面
+function handleEdit(row: Api.Product.Product) {
+  router.push(`/shop/product/${row.id}/edit`)
 }
 
 // 删除商品
@@ -180,32 +126,30 @@ async function handleBatchDelete() {
 }
 
 // 上架/下架
-async function handleToggleStatus(row: Api.Product.Product) {
-  const newStatus = row.status === 1 ? 0 : 1
-  await productApi.updateStatus(row.id, newStatus)
-  ElMessage.success(newStatus === 1 ? '上架成功' : '下架成功')
+async function handleToggleEnabled(row: Api.Product.Product) {
+  const newData = { ...row, isEnabled: !row.isEnabled }
+  await productApi.update(row.id, {
+    categoryId: newData.categoryId,
+    name: newData.name,
+    subtitle: newData.subtitle,
+    description: newData.description,
+    isEnabled: newData.isEnabled,
+    isHot: newData.isHot,
+    isNew: newData.isNew,
+    isRecommend: newData.isRecommend,
+    skus: newData.skus.map(sku => ({
+      skuCode: sku.skuCode,
+      specs: sku.specs,
+      price: sku.price,
+      originalPrice: sku.originalPrice,
+      costPrice: sku.costPrice,
+      stock: sku.stock,
+      lowStock: sku.lowStock,
+      image: sku.image,
+    })),
+  })
+  ElMessage.success(newData.isEnabled ? '上架成功' : '下架成功')
   getProductList()
-}
-
-// 提交表单
-async function handleSubmit() {
-  await formRef.value?.validate()
-  dialogLoading.value = true
-  try {
-    if (editingProductId.value) {
-      await productApi.update(editingProductId.value, formData.value)
-      ElMessage.success('修改成功')
-    }
-    else {
-      await productApi.create(formData.value)
-      ElMessage.success('创建成功')
-    }
-    dialogVisible.value = false
-    getProductList()
-  }
-  finally {
-    dialogLoading.value = false
-  }
 }
 
 // 分页改变
@@ -220,9 +164,18 @@ function handleSizeChange(size: number) {
   getProductList()
 }
 
+// 格式化价格区间
+function formatPriceRange(product: Api.Product.Product) {
+  if (product.minPrice === undefined || product.maxPrice === undefined)
+    return '-'
+  if (product.minPrice === product.maxPrice)
+    return `¥${product.minPrice.toFixed(2)}`
+  return `¥${product.minPrice.toFixed(2)} - ¥${product.maxPrice.toFixed(2)}`
+}
+
 onMounted(() => {
+  getCategoryTree()
   getProductList()
-  getCategoryList()
 })
 </script>
 
@@ -236,19 +189,27 @@ onMounted(() => {
             <el-input v-model="searchForm.keyword" placeholder="商品名称" clearable />
           </el-form-item>
           <el-form-item label="分类">
-            <el-select v-model="searchForm.categoryId" placeholder="请选择" clearable class="w-40">
-              <el-option
-                v-for="item in categoryOptions"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </el-select>
+            <el-tree-select
+              v-model="searchForm.categoryId"
+              :data="categoryTreeOptions"
+              placeholder="请选择"
+              clearable
+              check-strictly
+              class="w-40"
+            />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="请选择" clearable class="w-32">
-              <el-option label="上架" :value="1" />
-              <el-option label="下架" :value="0" />
+            <el-select v-model="searchForm.isHot" placeholder="热门" clearable class="w-24">
+              <el-option label="是" :value="true" />
+              <el-option label="否" :value="false" />
+            </el-select>
+            <el-select v-model="searchForm.isNew" placeholder="新品" clearable class="w-24 ml-2">
+              <el-option label="是" :value="true" />
+              <el-option label="否" :value="false" />
+            </el-select>
+            <el-select v-model="searchForm.isRecommend" placeholder="推荐" clearable class="w-24 ml-2">
+              <el-option label="是" :value="true" />
+              <el-option label="否" :value="false" />
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -292,24 +253,26 @@ onMounted(() => {
         @selection-change="(rows) => selectedRows = rows"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="name" label="商品名称" min-width="150" />
+        <el-table-column prop="name" label="商品名称" min-width="180" />
         <el-table-column prop="categoryName" label="分类" width="120" />
-        <el-table-column prop="price" label="价格" width="100" align="right">
+        <el-table-column label="价格区间" width="150" align="right">
           <template #default="{ row }">
-            ¥{{ row.price.toFixed(2) }}
+            {{ formatPriceRange(row) }}
           </template>
         </el-table-column>
-        <el-table-column prop="stock" label="库存" width="100" align="right" />
-        <el-table-column label="状态" width="100" align="center">
+        <el-table-column prop="totalStock" label="库存" width="100" align="right" />
+        <el-table-column prop="salesCount" label="销量" width="100" align="right" />
+        <el-table-column label="状态" width="180" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusMap[row.status]?.type">
-              {{ statusMap[row.status]?.label }}
-            </el-tag>
+            <el-tag v-if="row.isHot" size="small" type="danger" class="mr-1">热门</el-tag>
+            <el-tag v-if="row.isNew" size="small" type="success" class="mr-1">新品</el-tag>
+            <el-tag v-if="row.isRecommend" size="small" type="warning">推荐</el-tag>
+            <el-tag v-if="!row.isEnabled" size="small" type="info" class="ml-1">已下架</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column label="创建时间" width="180">
           <template #default="{ row }">
-            {{ row.createdAt ? dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
+            {{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
@@ -320,8 +283,8 @@ onMounted(() => {
               </template>
               编辑
             </FaButton>
-            <FaButton variant="ghost" size="sm" @click="handleToggleStatus(row)">
-              {{ row.status === 1 ? '下架' : '上架' }}
+            <FaButton variant="ghost" size="sm" @click="handleToggleEnabled(row)">
+              {{ row.isEnabled ? '下架' : '上架' }}
             </FaButton>
             <FaButton variant="ghost" size="sm" class="text-red-500" @click="handleDelete(row.id)">
               <template #icon>
@@ -346,54 +309,5 @@ onMounted(() => {
         />
       </div>
     </FaCard>
-
-    <!-- 创建/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form
-        ref="formRef"
-        v-loading="dialogLoading"
-        :model="formData"
-        :rules="rules"
-        label-width="100px"
-      >
-        <el-form-item label="商品名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入商品名称" />
-        </el-form-item>
-        <el-form-item label="商品描述">
-          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入商品描述" />
-        </el-form-item>
-        <el-form-item label="商品分类" prop="categoryId">
-          <el-select v-model="formData.categoryId" placeholder="请选择分类" class="w-full">
-            <el-option
-              v-for="item in categoryOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="价格" prop="price">
-          <el-input-number v-model="formData.price" :min="0" :precision="2" class="w-full" />
-        </el-form-item>
-        <el-form-item label="库存" prop="stock">
-          <el-input-number v-model="formData.stock" :min="0" :precision="0" class="w-full" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-radio-group v-model="formData.status">
-            <el-radio :value="1">上架</el-radio>
-            <el-radio :value="0">下架</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>

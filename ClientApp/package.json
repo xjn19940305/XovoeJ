@@ -29,6 +29,8 @@
     "@vueuse/components": "^14.1.0",
     "@vueuse/core": "^14.1.0",
     "@vueuse/integrations": "^14.1.0",
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-vue": "^1.0.2",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

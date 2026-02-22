@@ -36,6 +36,26 @@ const shopRoute: Route.recordMainRaw = {
           },
         },
         {
+          path: 'product/create',
+          name: 'ShopProductCreate',
+          component: () => import('@/views/shop/product/form.vue'),
+          meta: {
+            title: '创建商品',
+            auth: ['shop:product:create'],
+            menu: false,
+          },
+        },
+        {
+          path: 'product/:id/edit',
+          name: 'ShopProductEdit',
+          component: () => import('@/views/shop/product/form.vue'),
+          meta: {
+            title: '编辑商品',
+            auth: ['shop:product:update'],
+            menu: false,
+          },
+        },
+        {
           path: 'category',
           name: 'ShopProductCategory',
           component: () => import('@/views/shop/category/index.vue'),
