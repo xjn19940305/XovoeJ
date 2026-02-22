@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -22,40 +22,23 @@ namespace XovoeJ.Application.Services
             userManage = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             dbContext = scope.ServiceProvider.GetRequiredService<XovoeJDbContext>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-            //var mongo = scope.ServiceProvider.GetRequiredService<MongoRepositoryContext>();
+
             var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
 
             if (!await dbContext.Database.CanConnectAsync())
             {
                 await dbContext.Database.MigrateAsync();
-                //await CreateTenant();
                 await CreateRole(roleManager);
-                //await CreateUser();
+                await CreateUser();
                 await ImportMasterData();
-
             }
             else if (pendingMigrations.Any())
             {
                 await dbContext.Database.MigrateAsync();
             }
-            //await InitPointTask(onepointService);
-            //await InitLotteryDraw202312(mongo);
-            //await GenerateCdKey(mongo);
+
 
         }
-
-
-        //async Task CreateTenant()
-        //{
-        //    dbContext.Add(new Tenant
-        //    {
-        //        Name = "默认租户",
-        //        Code = "default",
-        //        Description = "系统默认租户",
-        //        IsEnabled = true,
-        //    });
-        //    await dbContext.SaveChangesAsync();
-        //}
 
         async Task ImportMasterData()
         {
@@ -101,17 +84,18 @@ namespace XovoeJ.Application.Services
 
         async Task CreateUser()
         {
-            await AddSysAccount("milo", ["超级管理员"]);
+            await AddSysAccount("milo", ["超级管理员"], "管理员账号");
         }
-        private async Task AddSysAccount(string userName, string[] RoleNames)
+
+        private async Task AddSysAccount(string userName, string[] roleNames, string? realName = null)
         {
             var user = await userManage.FindByNameAsync(userName);
             if (user == null)
             {
                 user = new User
                 {
-                    NickName = userName,
-
+                    NickName = realName ?? userName,
+                    RealName = realName ?? userName,
                 };
                 if (!string.IsNullOrEmpty(userName))
                 {
@@ -127,23 +111,55 @@ namespace XovoeJ.Application.Services
                 await userManage.SetLockoutEnabledAsync(user, false);
                 await dbContext.SaveChangesAsync();
             }
-            foreach (var RoleName in RoleNames)
+            foreach (var roleName in roleNames)
             {
-                await userManage.AddToRoleAsync(user, RoleName);
+                if (!await userManage.IsInRoleAsync(user, roleName))
+                {
+                    await userManage.AddToRoleAsync(user, roleName);
+                }
             }
-
         }
+
         async Task CreateRole(RoleManager<Role> roleManager)
         {
-            var role = new Role { Name = "超级管理员", Sort = 10 };
-            await roleManager.CreateAsync(role);
-            //核心demo.query
-            await roleManager.AddClaimAsync(role, new System.Security.Claims.Claim("permission", "user.permission"));
-            role = new Role { Name = "前端用户", Sort = 30 };
-            await roleManager.CreateAsync(role);
-            role = new Role { Name = "后端用户", Sort = 40 };
-            await roleManager.CreateAsync(role);
-        }
+            // 创建超级管理员角色
+            var role = await roleManager.FindByNameAsync("超级管理员");
+            if (role == null)
+            {
+                role = new Role { Name = "超级管理员", Sort = 10, Description = "系统内置管理员，拥有所有权限" };
+                await roleManager.CreateAsync(role);
+            }
 
+            // 检查并添加管理员权限声明
+            var adminPermissions = new[]
+            {
+                "*", // 通配符，表示所有权限
+            };
+
+            var existingClaims = await roleManager.GetClaimsAsync(role);
+            foreach (var permission in adminPermissions)
+            {
+                if (!existingClaims.Any(c => c.Type == "permission" && c.Value == permission))
+                {
+                    await roleManager.AddClaimAsync(role, new System.Security.Claims.Claim("permission", permission));
+                }
+            }
+
+            // 创建前端用户角色
+            role = await roleManager.FindByNameAsync("前端用户");
+            if (role == null)
+            {
+                role = new Role { Name = "前端用户", Sort = 30, Description = "前端用户" };
+                await roleManager.CreateAsync(role);
+            }
+
+            // 创建后端用户角色
+            role = await roleManager.FindByNameAsync("后端用户");
+            if (role == null)
+            {
+                role = new Role { Name = "后端用户", Sort = 40, Description = "后端用户" };
+                await roleManager.CreateAsync(role);
+            }
+        }
     }
 }

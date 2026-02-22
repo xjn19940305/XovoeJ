@@ -14,7 +14,10 @@ using Quartz;
 using System.Data;
 using System.Reflection;
 using System.Text;
+using XovoeJ.Abstractions.Services;
 using XovoeJ.Api.Swaggers;
+using XovoeJ.Application.Options;
+using XovoeJ.Application.Services;
 using XovoeJ.Entities;
 using XovoeJ.Infrastructure.Filters;
 using XovoeJ.Persistence.PostgreSql;
@@ -80,6 +83,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
 });
+
+
+// JWT Options
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtBearerOptions"));
 
 
 // Authentication - JWT
@@ -156,7 +163,7 @@ builder.Services.AddQuartz(options =>
         c.MaxConcurrency = Environment.ProcessorCount * 2;
     });
 
-    // TestJob - 示例任务
+    // TestJob - 示锟斤拷锟斤拷锟斤拷
     //options.AddJob<TestJob>(config =>
     //{
     //    config.WithIdentity(nameof(TestJob))
@@ -170,21 +177,21 @@ builder.Services.AddQuartz(options =>
     //    .StartNow();
     //});
 
-    // DocumentProcessingJob - 文档处理任务
-    // 模式1: 定时批量处理模式（推荐用于生产环境）
-    // 每1分钟执行一次，每次处理10个待上传的文档
+    // DocumentProcessingJob - 锟侥碉拷锟斤拷锟斤拷锟斤拷锟斤拷
+    // 模式1: 锟斤拷时锟斤拷锟斤拷锟斤拷锟斤拷模式锟斤拷锟狡硷拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
+    // 每1锟斤拷锟斤拷执锟斤拷一锟轿ｏ拷每锟轿达拷锟斤拷10锟斤拷锟斤拷锟较达拷锟斤拷锟侥碉拷
     //options.AddJob<DocumentProcessingJob>(config =>
     //{
     //    config.WithIdentity("DocumentProcessingJob")
     //    .StoreDurably()
-    //    .UsingJobData("batchSize", 50)           // 每批处理文档数量
-    //    .UsingJobData("timeoutSeconds", 60);     // 超时时间（秒）
+    //    .UsingJobData("batchSize", 50)           // 每锟斤拷锟斤拷锟斤拷锟侥碉拷锟斤拷锟斤拷
+    //    .UsingJobData("timeoutSeconds", 60);     // 锟斤拷时时锟戒（锟诫）
     //})
     //.AddTrigger(opt =>
     //{
     //    opt.WithIdentity("DocumentProcessingJobTrigger")
     //    .ForJob("DocumentProcessingJob")
-    //    // 使用Cron表达式：每分钟执行一次
+    //    // 使锟斤拷Cron锟斤拷锟斤拷式锟斤拷每锟斤拷锟斤拷执锟斤拷一锟斤拷
     //    .WithCronSchedule("0 * * * * ?")
     //    .StartNow();
     //});
@@ -313,7 +320,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 #region postgres
 if (string.IsNullOrEmpty(postgreSqlConnectionString))
 {
-    throw new Exception("DB_CONNECTION 环境变量或配置未设置。请在 appsettings.json 或环境变量中配置 PostgreSQL 连接字符串。格式: Host=localhost;Port=5432;Database=omnimind;Username=postgres;Password=your_password");
+    throw new Exception("DB_CONNECTION 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷未锟斤拷锟矫★拷锟斤拷锟斤拷 appsettings.json 锟津环撅拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷 PostgreSQL 锟斤拷锟斤拷锟街凤拷锟斤拷锟斤拷锟斤拷式: Host=localhost;Port=5432;Database=omnimind;Username=postgres;Password=your_password");
 }
 
 builder.Services.AddDbContext<XovoeJDbContext>(setup =>
@@ -328,6 +335,14 @@ builder.Services.AddDbContext<XovoeJDbContext>(setup =>
 // HttpClient & HealthChecks
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
+
+// Application Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 
 
@@ -373,7 +388,7 @@ app.MapHealthChecks("/liveness", new HealthCheckOptions
     Predicate = r => r.Name.Contains("self")
 });
 
-// SignalR Hub 端点映射
+// SignalR Hub 锟剿碉拷映锟斤拷
 //app.MapHub<IngestionHub>("/hubs/ingestion");
 
 app.MapControllers();

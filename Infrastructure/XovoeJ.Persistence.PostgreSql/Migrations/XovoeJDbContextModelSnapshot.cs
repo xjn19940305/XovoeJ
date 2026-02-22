@@ -17,10 +17,408 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("XovoeJ.Entities.Category", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("icon");
+
+                    b.Property<string>("Image")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("image");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("ParentId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("parent_id");
+
+                    b.Property<string>("Path")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("path");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("Path");
+
+                    b.ToTable("categories");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.Order", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CancelTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancel_time");
+
+                    b.Property<string>("ConsigneeAddress")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("consignee_address");
+
+                    b.Property<string>("ConsigneeMobile")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("consignee_mobile");
+
+                    b.Property<string>("ConsigneeName")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("consignee_name");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("discount_amount");
+
+                    b.Property<DateTime?>("FinishTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finish_time");
+
+                    b.Property<decimal>("FreightAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("freight_amount");
+
+                    b.Property<string>("OrderNo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_no");
+
+                    b.Property<decimal>("PayAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("pay_amount");
+
+                    b.Property<int>("PayStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("pay_status");
+
+                    b.Property<DateTime?>("PayTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pay_time");
+
+                    b.Property<DateTime?>("ReceiveTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("receive_time");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("remark");
+
+                    b.Property<int>("ShipStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("ship_status");
+
+                    b.Property<DateTime?>("ShipTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ship_time");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("OrderNo")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("orders");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.OrderItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("OrderId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_id");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("price");
+
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ProductImage")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("product_image");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("product_name");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("SkuId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_id");
+
+                    b.Property<string>("SkuSpecs")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("sku_specs");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("subtotal");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("order_items");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.Product", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BrowseCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("browse_count");
+
+                    b.Property<string>("CategoryId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Detail")
+                        .HasColumnType("text")
+                        .HasColumnName("detail");
+
+                    b.Property<string>("Images")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("images");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<bool>("IsHot")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_hot");
+
+                    b.Property<bool>("IsNew")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_new");
+
+                    b.Property<bool>("IsRecommend")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_recommend");
+
+                    b.Property<string>("MainImage")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("main_image");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SalesCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("sales_count");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("subtitle");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.HasIndex("IsHot");
+
+                    b.HasIndex("IsNew");
+
+                    b.HasIndex("IsRecommend");
+
+                    b.HasIndex("SalesCount");
+
+                    b.ToTable("products");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.ProductSku", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("CostPrice")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("cost_price");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Image")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("image");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<int>("LowStock")
+                        .HasColumnType("integer")
+                        .HasColumnName("low_stock");
+
+                    b.Property<decimal?>("OriginalPrice")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("original_price");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("price");
+
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("SalesCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("sales_count");
+
+                    b.Property<string>("SkuCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_code");
+
+                    b.Property<string>("Specs")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("specs");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SkuCode")
+                        .IsUnique();
+
+                    b.HasIndex("Stock");
+
+                    b.ToTable("product_skus");
+                });
 
             modelBuilder.Entity("XovoeJ.Entities.RefreshToken", b =>
                 {
@@ -146,6 +544,126 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.ShoppingCart", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("SkuId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SkuId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "SkuId")
+                        .IsUnique();
+
+                    b.ToTable("shopping_cart");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.SpecGroup", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("spec_groups");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.SpecValue", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("SpecGroupId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("spec_group_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SortOrder");
+
+                    b.HasIndex("SpecGroupId");
+
+                    b.ToTable("spec_values");
                 });
 
             modelBuilder.Entity("XovoeJ.Entities.User", b =>
@@ -349,6 +867,48 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("XovoeJ.Entities.Category", b =>
+                {
+                    b.HasOne("XovoeJ.Entities.Category", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.OrderItem", b =>
+                {
+                    b.HasOne("XovoeJ.Entities.Order", "Order")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.Product", b =>
+                {
+                    b.HasOne("XovoeJ.Entities.Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.ProductSku", b =>
+                {
+                    b.HasOne("XovoeJ.Entities.Product", "Product")
+                        .WithMany("Skus")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("XovoeJ.Entities.RoleClaim", b =>
                 {
                     b.HasOne("XovoeJ.Entities.Role", null)
@@ -356,6 +916,28 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.ShoppingCart", b =>
+                {
+                    b.HasOne("XovoeJ.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.SpecValue", b =>
+                {
+                    b.HasOne("XovoeJ.Entities.SpecGroup", "SpecGroup")
+                        .WithMany("Values")
+                        .HasForeignKey("SpecGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SpecGroup");
                 });
 
             modelBuilder.Entity("XovoeJ.Entities.UserClaim", b =>
@@ -398,6 +980,28 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.Category", b =>
+                {
+                    b.Navigation("Children");
+
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.Order", b =>
+                {
+                    b.Navigation("OrderItems");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.Product", b =>
+                {
+                    b.Navigation("Skus");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.SpecGroup", b =>
+                {
+                    b.Navigation("Values");
                 });
 #pragma warning restore 612, 618
         }
