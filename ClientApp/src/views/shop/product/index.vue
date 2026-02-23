@@ -202,48 +202,89 @@ onMounted(() => {
 <template>
   <div class="shop-product-list">
     <!-- 搜索表单 -->
-    <FaCard class="mb-4">
-      <div class="p-4">
-        <el-form :model="searchForm" inline>
-          <el-form-item label="关键字">
-            <el-input v-model="searchForm.keyword" placeholder="商品名称" clearable />
-          </el-form-item>
-          <el-form-item label="分类">
+    <FaCard class="search-card mb-4">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
+          <span>商品筛选</span>
+        </div>
+      </div>
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">关键字</label>
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索商品名称"
+              clearable
+            >
+              <template #prefix>
+                <FaIcon name="i-heroicons-solid:tag" class="size-4 text-gray-400" />
+              </template>
+            </el-input>
+          </div>
+          <div class="search-field">
+            <label class="search-label">商品分类</label>
             <el-tree-select
               v-model="searchForm.categoryId"
               :data="categoryTreeOptions"
-              placeholder="请选择"
+              placeholder="选择商品分类"
               clearable
               check-strictly
-              class="w-40"
+              class="w-full"
             />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.isHot" placeholder="热门" clearable class="w-24">
-              <el-option label="是" :value="true" />
-              <el-option label="否" :value="false" />
+          </div>
+          <div class="search-field">
+            <label class="search-label">热门商品</label>
+            <el-select v-model="searchForm.isHot" placeholder="全部" clearable class="w-full">
+              <el-option label="是" :value="true">
+                <span class="flex items-center gap-2">
+                  <FaIcon name="i-heroicons-solid:fire" class="size-4 text-orange-500" />
+                  是
+                </span>
+              </el-option>
+              <el-option label="否" :value="false">否</el-option>
             </el-select>
-            <el-select v-model="searchForm.isNew" placeholder="新品" clearable class="w-24 ml-2">
-              <el-option label="是" :value="true" />
-              <el-option label="否" :value="false" />
+          </div>
+          <div class="search-field">
+            <label class="search-label">新品</label>
+            <el-select v-model="searchForm.isNew" placeholder="全部" clearable class="w-full">
+              <el-option label="是" :value="true">
+                <span class="flex items-center gap-2">
+                  <FaIcon name="i-heroicons-solid:sparkles" class="size-4 text-green-500" />
+                  是
+                </span>
+              </el-option>
+              <el-option label="否" :value="false">否</el-option>
             </el-select>
-            <el-select v-model="searchForm.isRecommend" placeholder="推荐" clearable class="w-24 ml-2">
-              <el-option label="是" :value="true" />
-              <el-option label="否" :value="false" />
+          </div>
+          <div class="search-field">
+            <label class="search-label">推荐商品</label>
+            <el-select v-model="searchForm.isRecommend" placeholder="全部" clearable class="w-full">
+              <el-option label="是" :value="true">
+                <span class="flex items-center gap-2">
+                  <FaIcon name="i-heroicons-solid:thumb-up" class="size-4 text-blue-500" />
+                  是
+                </span>
+              </el-option>
+              <el-option label="否" :value="false">否</el-option>
             </el-select>
-          </el-form-item>
-          <el-form-item>
-            <FaButton @click="handleSearch">
-              <template #icon>
-                <FaIcon name="i-mage-icons:search" />
-              </template>
-              搜索
-            </FaButton>
-            <FaButton variant="ghost" @click="handleReset">
-              重置
-            </FaButton>
-          </el-form-item>
-        </el-form>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
+        <FaButton @click="handleSearch">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:magnifying-glass" />
+          </template>
+          搜索
+        </FaButton>
+        <FaButton class="search-reset-btn" @click="handleReset">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:arrow-path" />
+          </template>
+          重置
+        </FaButton>
       </div>
     </FaCard>
 

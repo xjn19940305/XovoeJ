@@ -84,3 +84,206 @@ body {
 textarea {
   font-family: inherit;
 }
+
+/* ========== 搜索筛选卡片样式 ========== */
+.search-card {
+  width: 100%;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  overflow: hidden;
+  background: hsl(var(--card));
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.07), 0 1px 2px hsl(var(--foreground) / 0.04);
+  transition: all 0.2s ease;
+}
+
+/* 覆盖 FaCard 的 CardContent 默认 padding */
+.search-card > div:first-child {
+  padding: 0 !important;
+}
+
+.search-card:hover {
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.08), 0 2px 6px hsl(var(--foreground) / 0.04);
+}
+
+.search-header {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: linear-gradient(90deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--muted) / 0.15) 100%);
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.search-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  color: hsl(var(--primary));
+}
+
+.search-body {
+  padding: 20px;
+  background: hsl(var(--muted) / 0.12);
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px 20px;
+  align-items: start;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.8);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-label::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: hsl(var(--primary));
+  border-radius: 2px;
+}
+
+/* 搜索底部操作区 */
+.search-footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid hsl(var(--border) / 0.6);
+  background: linear-gradient(180deg, hsl(var(--muted) / 0.12) 0%, hsl(var(--muted) / 0.18) 100%);
+}
+
+/* 重置按钮样式 */
+.search-reset-btn {
+  background: #f5f5f5 !important;
+  color: #666 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+.search-reset-btn:hover {
+  background: #e8e8e8 !important;
+  border-color: #d0d0d0 !important;
+}
+
+.dark .search-reset-btn {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground) / 0.7) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .search-reset-btn:hover {
+  background: hsl(var(--muted) / 0.8) !important;
+}
+
+/* Element Plus 输入框美化覆盖 */
+.search-field .el-input {
+  --el-input-border-radius: 8px;
+  --el-input-border-color: #d1d5db;
+  --el-input-focus-border-color: hsl(var(--primary));
+  --el-input-bg-color: #ffffff;
+}
+
+.search-field .el-input__wrapper {
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.search-field .el-input__wrapper:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.search-field .el-input__wrapper.is-focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dark .search-field .el-input {
+  --el-input-bg-color: hsl(var(--background));
+  --el-input-border-color: hsl(var(--border));
+}
+
+.dark .search-field .el-input__wrapper {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
+}
+
+.dark .search-field .el-input__wrapper:hover {
+  border-color: hsl(var(--foreground) / 0.3);
+  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.06);
+}
+
+.dark .search-field .el-input__wrapper.is-focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 0 2px 4px hsl(var(--foreground) / 0.06);
+}
+
+/* Element Plus 选择器美化 */
+.search-field .el-select {
+  --el-select-border-radius: 8px;
+}
+
+.search-field .el-select .el-input__wrapper {
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+.search-field .el-select .el-input__wrapper:hover {
+  border-color: #9ca3af;
+}
+
+.dark .search-field .el-select .el-input__wrapper {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
+
+.dark .search-field .el-select .el-input__wrapper:hover {
+  border-color: hsl(var(--foreground) / 0.3);
+}
+
+/* Element Plus 树形选择器美化 */
+.search-field .el-tree-select .el-input__wrapper {
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+.search-field .el-tree-select .el-input__wrapper:hover {
+  border-color: #9ca3af;
+}
+
+.dark .search-field .el-tree-select .el-input__wrapper {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
+
+.dark .search-field .el-tree-select .el-input__wrapper:hover {
+  border-color: hsl(var(--foreground) / 0.3);
+}
+
+/* 下拉选项图标样式 */
+.search-field .el-select-dropdown__item {
+  display: flex;
+  align-items: center;
+}

@@ -168,24 +168,42 @@ onMounted(() => {
 <template>
   <div class="shop-product-category">
     <!-- 搜索表单 -->
-    <FaCard class="mb-4">
-      <div class="p-4">
-        <el-form :model="searchForm" inline>
-          <el-form-item label="关键字">
-            <el-input v-model="searchForm.keyword" placeholder="分类名称" clearable />
-          </el-form-item>
-          <el-form-item>
-            <FaButton @click="handleSearch">
-              <template #icon>
-                <FaIcon name="i-mage-icons:search" />
+    <FaCard class="search-card mb-4">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
+          <span>分类筛选</span>
+        </div>
+      </div>
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">关键字</label>
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索分类名称"
+              clearable
+            >
+              <template #prefix>
+                <FaIcon name="i-heroicons-solid:tag" class="size-4 text-gray-400" />
               </template>
-              搜索
-            </FaButton>
-            <FaButton variant="ghost" @click="handleReset">
-              重置
-            </FaButton>
-          </el-form-item>
-        </el-form>
+            </el-input>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
+        <FaButton @click="handleSearch">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:magnifying-glass" />
+          </template>
+          搜索
+        </FaButton>
+        <FaButton class="search-reset-btn" @click="handleReset">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:arrow-path" />
+          </template>
+          重置
+        </FaButton>
       </div>
     </FaCard>
 

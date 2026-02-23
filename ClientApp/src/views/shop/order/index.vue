@@ -131,33 +131,77 @@ onMounted(() => {
 <template>
   <div class="shop-order-list">
     <!-- 搜索表单 -->
-    <FaCard class="mb-4">
-      <div class="p-4">
-        <el-form :model="searchForm" inline>
-          <el-form-item label="关键字">
-            <el-input v-model="searchForm.keyword" placeholder="订单号/用户名" clearable />
-          </el-form-item>
-          <el-form-item label="订单状态">
-            <el-select v-model="searchForm.status" placeholder="请选择" clearable class="w-32">
-              <el-option label="待付款" :value="0" />
-              <el-option label="待发货" :value="1" />
-              <el-option label="待收货" :value="2" />
-              <el-option label="已完成" :value="3" />
-              <el-option label="已取消" :value="4" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <FaButton @click="handleSearch">
-              <template #icon>
-                <FaIcon name="i-mage-icons:search" />
+    <FaCard class="search-card mb-4">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
+          <span>订单筛选</span>
+        </div>
+      </div>
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">关键字</label>
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索订单号/用户名"
+              clearable
+            >
+              <template #prefix>
+                <FaIcon name="i-heroicons-solid:document-text" class="size-4 text-gray-400" />
               </template>
-              搜索
-            </FaButton>
-            <FaButton variant="ghost" @click="handleReset">
-              重置
-            </FaButton>
-          </el-form-item>
-        </el-form>
+            </el-input>
+          </div>
+          <div class="search-field">
+            <label class="search-label">订单状态</label>
+            <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
+              <el-option label="待付款" :value="0">
+                <span class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-warning"></span>
+                  待付款
+                </span>
+              </el-option>
+              <el-option label="待发货" :value="1">
+                <span class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                  待发货
+                </span>
+              </el-option>
+              <el-option label="待收货" :value="2">
+                <span class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                  待收货
+                </span>
+              </el-option>
+              <el-option label="已完成" :value="3">
+                <span class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                  已完成
+                </span>
+              </el-option>
+              <el-option label="已取消" :value="4">
+                <span class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                  已取消
+                </span>
+              </el-option>
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
+        <FaButton @click="handleSearch">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:magnifying-glass" />
+          </template>
+          搜索
+        </FaButton>
+        <FaButton class="search-reset-btn" @click="handleReset">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:arrow-path" />
+          </template>
+          重置
+        </FaButton>
       </div>
     </FaCard>
 

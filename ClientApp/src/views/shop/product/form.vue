@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules, UploadProps, UploadUserFile } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import '@wangeditor/editor/dist/css/style.css'
@@ -7,6 +7,10 @@ import { createEditor, createToolbar } from '@wangeditor/editor'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 import productApi from '@/api/modules/product'
 import categoryApi from '@/api/modules/category'
+import FormSection from '@/ui/components/FormSection/index.vue'
+import ProductAttributes from './components/ProductAttributes.vue'
+import ProductImageUpload from './components/ProductImageUpload.vue'
+import SkuManager from './components/SkuManager.vue'
 
 defineOptions({
   name: 'ShopProductForm',
@@ -42,35 +46,13 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const saving = ref(false)
 
-// 图片列表（合并主图和图片，第一张为主图）
-const imageFileList = ref<UploadUserFile[]>([])
-const maxImageCount = 8
-
-// 图片预览
-const previewImageVisible = ref(false)
-const previewImageUrl = ref('')
-
 // 商品详情（只读，用于编辑时显示）
 const productDetail = ref<Api.Product.Product | null>(null)
 
-// SKU 规格属性
-interface SpecAttribute {
-  id: string
-  name: string
-  values: SpecValue[]
-}
-
-interface SpecValue {
-  id: string
-  name: string
-}
-
-// SKU 数据
+// SKU 数据（与 SkuManager 组件保持一致）
 interface SkuItem {
-  id: string  // SkuCode
-  _specKey: string  // 基于规格值ID的唯一键，用于智能匹配
-  specs: Record<string, string>  // 规格名称 -> 规格值名称（用于显示）
-  _specIds: Record<string, string>  // 规格名称 -> 规格值ID（用于追踪变化）
+  id: string
+  specs: Record<string, string>
   price: number
   originalPrice?: number
   costPrice?: number
@@ -79,7 +61,6 @@ interface SkuItem {
   image?: string
 }
 
-const specAttributes = ref<SpecAttribute[]>([])
 const skuList = ref<SkuItem[]>([])
 
 // 分类树数据
@@ -136,10 +117,6 @@ onMounted(async () => {
   getCategoryTree()
   if (isEdit.value) {
     await getProductDetail()
-  }
-  else {
-    // 创建模式下初始化默认 SKU
-    generateSkus()
   }
 
   // 等待 DOM 渲染后初始化编辑器
@@ -232,298 +209,63 @@ const rules: FormRules = {
   ],
 }
 
-// 上传配置
-const uploadAction = ref('') // 不使用默认上传地址，改用 httpRequest
-const uploadHeaders = computed(() => ({}))
-
-// 获取永久访问 URL
-async function getPermanentUrl(key: string): Promise<string> {
-  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
-  const response = await fetch(`${baseURL}/api/files/view?key=${encodeURIComponent(key)}`)
-  const result = await response.json()
-  return result.url || `${baseURL}/api/files/proxy?key=${encodeURIComponent(key)}`
-}
-
-// 自定义上传请求
-const handleImageUpload: UploadProps['httpRequest'] = async (options) => {
-  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
-  const formData = new FormData()
-  formData.append('file', options.file)
-
-  try {
-    // 上传文件
-    const response = await fetch(`${baseURL}/api/files/upload`, {
-      method: 'POST',
-      body: formData,
-    })
-    const result = await response.json()
-
-    if (result.key) {
-      // 获取永久访问 URL
-      const permanentUrl = await getPermanentUrl(result.key)
-
-      // 手动设置文件对象的 response 属性
-      options.onSuccess({ key: result.key, url: permanentUrl }, options.file)
-
-      // 手动更新文件列表中的 response（el-upload 不会自动设置）
-      const fileItem = imageFileList.value.find(f => f.uid === options.file.uid)
-      if (fileItem) {
-        fileItem.response = { key: result.key, url: permanentUrl }
-        fileItem.url = permanentUrl
-      }
-
-      // 更新图片列表
-      updateImageList()
-    }
-    else {
-      options.onError(new Error(result.message || '上传失败'))
-    }
-  }
-  catch (error) {
-    options.onError(error as Error)
-  }
-}
-
-// 图片上传相关
-const handleImageChange: UploadProps['onChange'] = () => {
-  updateImageList()
-}
-
-// 更新图片列表
-function updateImageList() {
-  const urls: string[] = []
-  imageFileList.value.forEach((file) => {
-    if (file.url && !file.url.startsWith('blob:')) {
-      urls.push(file.url)
-    }
-  })
-  formData.value.images = urls
-}
-
-const beforeImageUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  if (!rawFile.type.startsWith('image/')) {
-    ElMessage.error('请上传图片文件')
-    return false
-  }
-  else if (rawFile.size / 1024 / 1024 > 5) {
-    ElMessage.error('图片大小不能超过 5MB')
-    return false
-  }
-  if (imageFileList.value.length >= maxImageCount) {
-    ElMessage.error(`最多上传${maxImageCount}张图片`)
-    return false
-  }
-  return true
-}
-
-const handleImageRemove: UploadProps['onRemove'] = () => {
-  updateImageList()
-  return true
-}
-
-// 图片预览
-const handleImagePreview: UploadProps['onPreview'] = (file) => {
-  previewImageUrl.value = file.url || (file.response as any)?.url || ''
-  previewImageVisible.value = true
-}
-
-// SKU 图片上传前校验
-const beforeSkuImageUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  if (!rawFile.type.startsWith('image/')) {
-    ElMessage.error('请上传图片文件')
-    return false
-  }
-  else if (rawFile.size / 1024 / 1024 > 5) {
-    ElMessage.error('图片大小不能超过 5MB')
-    return false
-  }
-  return true
-}
-
-// SKU 图片上传
-async function handleSkuImageUpload(options: { file: File; onSuccess: (response: any, file?: File) => void; onError: (error: Error) => void }, skuId: string) {
-  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
-  const formData = new FormData()
-  formData.append('file', options.file)
-
-  try {
-    // 上传文件
-    const response = await fetch(`${baseURL}/api/files/upload`, {
-      method: 'POST',
-      body: formData,
-    })
-    const result = await response.json()
-
-    if (result.key) {
-      // 获取永久访问 URL
-      const permanentUrl = await getPermanentUrl(result.key)
-
-      // 找到对应的 SKU 并设置图片
-      const sku = skuList.value.find(s => s.id === skuId)
-      if (sku) {
-        sku.image = permanentUrl
-      }
-
-      options.onSuccess({ key: result.key, url: permanentUrl }, options.file)
-    }
-    else {
-      options.onError(new Error(result.message || '上传失败'))
-    }
-  }
-  catch (error) {
-    options.onError(error as Error)
-  }
-}
-
 // 获取分类树
 async function getCategoryTree() {
   const res = await categoryApi.getTree()
   categoryTreeData.value = res.data
 }
 
-// 获取分类名称
-function getCategoryName(categoryId: string, categories: Api.Category.CategoryTreeNode[]): string {
-  for (const cat of categories) {
-    if (cat.id === categoryId)
-      return cat.name
-    if (cat.children?.length) {
-      const found = getCategoryName(categoryId, cat.children)
-      if (found)
-        return found
+// 将完整 URL 转换为相对路径
+function convertToRelativePath(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  // 如果已经是相对路径（不以 http 开头），直接返回
+  if (!url.startsWith('http')) return url
+
+  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
+  const proxyPrefix = `${baseURL}/api/files/proxy?key=`
+
+  if (url.startsWith(proxyPrefix)) {
+    // 从 URL 中提取 key（URL 编码的）
+    const urlObj = new URL(url)
+    const keyParam = urlObj.searchParams.get('key')
+    if (keyParam) {
+      return keyParam // 已经是解码后的
     }
   }
-  return ''
+  return url
 }
 
-// ========== SKU 相关 ==========
+// 处理富文本内容中的图片 URL，转换为完整 URL（用于编辑器显示）
+function convertDetailContentForDisplay(content: string): string {
+  if (!content) return content
 
-// 添加规格属性
-function handleAddAttribute() {
-  specAttributes.value.push({
-    id: `attr_${Date.now()}`,
-    name: '',
-    values: [],
+  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
+  const proxyPrefix = `${baseURL}/api/files/proxy?key=`
+
+  // 匹配相对路径的图片（如 20260223/xxx.jpg），将其转换为完整 URL
+  // 排除已经是完整 URL 的情况
+  return content.replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/g, (match, src) => {
+    // 如果已经是完整 URL 或 base64，不处理
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+      return match
+    }
+    // 相对路径转换为完整 URL
+    const fullUrl = `${proxyPrefix}${encodeURIComponent(src)}`
+    return match.replace(`src="${src}"`, `src="${fullUrl}"`).replace(`src='${src}'`, `src='${fullUrl}'`)
   })
 }
 
-// 删除规格属性
-function handleRemoveAttribute(attrId: string) {
-  const index = specAttributes.value.findIndex(attr => attr.id === attrId)
-  if (index > -1) {
-    specAttributes.value.splice(index, 1)
-    generateSkus()
-  }
-}
+// 处理富文本内容中的图片 URL，转换为相对路径（用于提交）
+function processDetailContent(content: string): string {
+  if (!content) return content
 
-// 添加规格值
-function handleAddValue(attrId: string) {
-  const attr = specAttributes.value.find(a => a.id === attrId)
-  if (attr) {
-    attr.values.push({
-      id: `val_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: '',
-    })
-  }
-}
+  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
+  const proxyPrefix = `${baseURL}/api/files/proxy?key=`
 
-// 删除规格值
-function handleRemoveValue(attrId: string, valueId: string) {
-  const attr = specAttributes.value.find(a => a.id === attrId)
-  if (attr) {
-    const index = attr.values.findIndex(v => v.id === valueId)
-    if (index > -1) {
-      attr.values.splice(index, 1)
-      generateSkus()
-    }
-  }
-}
-
-// 生成 SKU（笛卡尔积）
-function generateSkus() {
-  // 过滤掉没有名称或没有有效值的规格
-  const validAttrs = specAttributes.value.filter(attr =>
-    attr.name.trim() && attr.values.some(v => v.name.trim())
-  )
-
-  // 保存现有的 SKU 列表用于智能匹配
-  const existingSkus = [...skuList.value]
-
-  // 如果没有有效规格，创建一个默认的 SKU 记录
-  if (validAttrs.length === 0) {
-    // 查找是否已存在默认 SKU（没有规格的）
-    const existingDefaultSku = existingSkus.find(sku => !sku._specKey || sku._specKey === '')
-
-    skuList.value = [
-      {
-        id: existingDefaultSku?.id || `sku_${Date.now()}`,
-        _specKey: '',
-        specs: {},
-        _specIds: {},
-        price: existingDefaultSku?.price ?? 0,
-        originalPrice: existingDefaultSku?.originalPrice,
-        costPrice: existingDefaultSku?.costPrice,
-        stock: existingDefaultSku?.stock ?? 0,
-        lowStock: existingDefaultSku?.lowStock ?? 10,
-        image: existingDefaultSku?.image,
-      },
-    ]
-    return
-  }
-
-  // 笛卡尔积生成所有组合
-  function cartesianProduct<T>(...arrays: T[][]): T[][] {
-    if (arrays.length === 0) return [[]]
-    const [first, ...rest] = arrays
-    if (!first || first.length === 0) return cartesianProduct(...rest)
-    const restProduct = cartesianProduct(...rest)
-    return first.flatMap(item => restProduct.map(restItem => [item, ...restItem]))
-  }
-
-  // 构建规格值数组（包含规格值ID用于智能匹配）
-  const specValueArrays = validAttrs.map(attr =>
-    attr.values.filter(v => v.name.trim()).map(v => ({
-      attrName: attr.name,
-      attrId: attr.id,
-      value: v.name,
-      valueId: v.id,
-    }))
-  )
-
-  // 生成所有组合
-  const combinations = cartesianProduct(...specValueArrays)
-
-  // 生成 SKU 列表，智能匹配已有 SKU
-  const newSkus: SkuItem[] = combinations.map((combination) => {
-    const specs: Record<string, string> = {}
-    const _specIds: Record<string, string> = {}
-
-    combination.forEach(({ attrName, valueId, value }) => {
-      specs[attrName] = value
-      _specIds[attrName] = valueId
-    })
-
-    // 生成基于规格值ID的唯一键（用于智能匹配）
-    const specKeyIdArray = validAttrs.map(attr => `${attr.id}:${_specIds[attr.name] || ''}`).sort()
-    const _specKey = specKeyIdArray.join('|')
-
-    // 查找是否已存在相同规格值ID组合的 SKU
-    const existingSku = existingSkus.find(sku => sku._specKey === _specKey)
-
-    return {
-      id: existingSku?.id || `sku_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      _specKey,
-      specs,
-      _specIds,
-      price: existingSku?.price ?? 0,
-      originalPrice: existingSku?.originalPrice,
-      costPrice: existingSku?.costPrice,
-      stock: existingSku?.stock ?? 0,
-      lowStock: existingSku?.lowStock ?? 10,
-      image: existingSku?.image,
-    }
+  // 替换所有代理图片 URL 为相对路径
+  return content.replace(new RegExp(`${proxyPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^"&'\\s>]+)`, 'g'), (match, key) => {
+    return decodeURIComponent(key)
   })
-
-  skuList.value = newSkus
 }
 
 // 获取商品详情
@@ -539,11 +281,19 @@ async function getProductDetail() {
     // 合并主图和图片列表
     const allImages: string[] = []
     if (data.mainImage) {
-      allImages.push(data.mainImage)
+      const converted = convertToRelativePath(data.mainImage)
+      console.log('mainImage 原值:', data.mainImage)
+      console.log('mainImage 转换后:', converted)
+      allImages.push(converted || data.mainImage)
     }
     if (data.images?.length) {
-      allImages.push(...data.images)
+      allImages.push(...data.images.map(img => {
+        const converted = convertToRelativePath(img)
+        console.log('image 原值:', img, '转换后:', converted)
+        return converted || img
+      }))
     }
+    console.log('allImages 最终值:', allImages)
 
     formData.value = {
       categoryId: data.categoryId,
@@ -551,7 +301,8 @@ async function getProductDetail() {
       subtitle: data.subtitle ?? '',
       description: data.description ?? '',
       images: allImages,
-      detail: data.detail ?? '',
+      // 将富文本中的相对路径图片转换为完整 URL 用于显示
+      detail: convertDetailContentForDisplay(data.detail ?? ''),
       tags: data.tags || [],
       isHot: data.isHot,
       isNew: data.isNew,
@@ -569,84 +320,32 @@ async function getProductDetail() {
       })),
     }
 
-    // 设置图片列表
-    if (allImages.length) {
-      imageFileList.value = allImages.map((url, index) => ({
-        name: `image-${index}`,
-        url,
-        status: 'success',
-      }))
-    }
-
-    // 解析 SKU 数据到规格属性和 SKU 列表
-    if (data.skus?.length) {
-      const attrMap = new Map<string, Map<string, { id: string, name: string }>>() // 规格名 -> 值名 -> 值对象
-      const attrIdMap = new Map<string, string>() // 规格名称 -> 规格ID
-      const valueIdMap = new Map<string, string>() // 规格:值 -> 值ID
-      const skus: SkuItem[] = []
-
-      data.skus.forEach((sku) => {
-        let specs: Record<string, string> = {}
-        if (typeof sku.specs === 'string') {
-          try {
-            specs = JSON.parse(sku.specs)
-          }
-          catch {
-            specs = {}
-          }
+    // 解析 SKU 数据到列表（供 SkuManager 使用）
+    skuList.value = data.skus.map(sku => {
+      let specs: Record<string, string> = {}
+      if (typeof sku.specs === 'string') {
+        try {
+          specs = JSON.parse(sku.specs)
         }
-        else {
-          specs = sku.specs || {}
+        catch {
+          specs = {}
         }
+      }
+      else {
+        specs = sku.specs || {}
+      }
 
-        const _specIds: Record<string, string> = {}
-
-        // 收集属性
-        for (const [key, value] of Object.entries(specs)) {
-          if (!attrMap.has(key)) {
-            attrMap.set(key, new Map())
-            const attrId = `attr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-            attrIdMap.set(key, attrId)
-          }
-          // 如果这个值还没有 ID，就创建一个
-          if (!valueIdMap.has(`${key}:${value}`)) {
-            const valId = `val_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-            valueIdMap.set(`${key}:${value}`, valId)
-            attrMap.get(key)!.set(value, { id: valId, name: value })
-          }
-          _specIds[key] = valueIdMap.get(`${key}:${value}`)!
-        }
-
-        // 生成 _specKey（基于规格值ID）
-        const specKeyIdArray = Object.entries(specs).map(([attrName, value]) => {
-          const attrId = attrIdMap.get(attrName) || ''
-          const valueId = valueIdMap.get(`${attrName}:${value}`) || ''
-          return `${attrId}:${valueId}`
-        }).sort()
-
-        skus.push({
-          id: sku.skuCode,
-          _specKey: specKeyIdArray.join('|'),
-          specs,
-          _specIds,
-          price: sku.price,
-          originalPrice: sku.originalPrice,
-          costPrice: sku.costPrice,
-          stock: sku.stock,
-          lowStock: sku.lowStock,
-          image: sku.image,
-        })
-      })
-
-      // 构建规格属性
-      specAttributes.value = Array.from(attrMap.entries()).map(([name, valueMap]) => ({
-        id: attrIdMap.get(name) || `attr_${Date.now()}`,
-        name,
-        values: Array.from(valueMap.values()),
-      }))
-
-      skuList.value = skus
-    }
+      return {
+        id: sku.skuCode,
+        specs,
+        price: sku.price,
+        originalPrice: sku.originalPrice,
+        costPrice: sku.costPrice,
+        stock: sku.stock,
+        lowStock: sku.lowStock,
+        image: convertToRelativePath(sku.image),
+      }
+    })
   }
   finally {
     loading.value = false
@@ -656,9 +355,6 @@ async function getProductDetail() {
 // 提交表单
 async function handleSubmit() {
   await formRef.value?.validate()
-
-  // 先更新图片列表，确保获取最新数据
-  updateImageList()
 
   // 检查图片
   if (formData.value.images.length === 0) {
@@ -694,9 +390,17 @@ async function handleSubmit() {
 
   saving.value = true
   try {
+    console.log('提交前 formData.value.images:', formData.value.images)
+
     // 分离主图和图片列表
     const mainImage = formData.value.images[0]
     const images = formData.value.images.slice(1)
+
+    console.log('提交时 mainImage:', mainImage)
+    console.log('提交时 images:', images)
+
+    // 处理富文本内容中的图片 URL，转换为相对路径
+    const detail = processDetailContent(formData.value.detail || '')
 
     if (isEdit.value) {
       // 编辑时提交数据，包含 SKU
@@ -707,7 +411,7 @@ async function handleSubmit() {
         description: formData.value.description || undefined,
         mainImage: mainImage || undefined,
         images,
-        detail: formData.value.detail || undefined,
+        detail: detail || undefined,
         isEnabled: formData.value.isEnabled,
         isHot: formData.value.isHot,
         isNew: formData.value.isNew,
@@ -726,7 +430,7 @@ async function handleSubmit() {
         description: formData.value.description,
         mainImage,
         images,
-        detail: formData.value.detail,
+        detail,
         isHot: formData.value.isHot,
         isNew: formData.value.isNew,
         isRecommend: formData.value.isRecommend,
@@ -750,24 +454,19 @@ function handleCancel() {
 
 <template>
   <div class="shop-product-form p-4">
-    <FaCard>
+    <FaCard class="product-form-card">
       <template #header>
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-semibold">
-              {{ pageTitle }}
-            </h2>
-          </div>
-          <div class="flex gap-2">
-            <FaButton variant="ghost" @click="handleCancel">
-              取消
-            </FaButton>
-            <FaButton :loading="saving" @click="handleSubmit">
-              <template #icon>
-                <FaIcon name="i-iconoir:check" />
-              </template>
-              保存
-            </FaButton>
+        <div class="form-card-header">
+          <div class="form-header-left">
+            <div class="form-icon-wrapper">
+              <FaIcon name="i-heroicons-solid:shopping-cart" class="size-5" />
+            </div>
+            <div>
+              <h2 class="form-title">
+                {{ pageTitle }}
+              </h2>
+              <p class="form-subtitle">填写商品信息并设置规格库存</p>
+            </div>
           </div>
         </div>
       </template>
@@ -781,10 +480,7 @@ function handleCancel() {
         class="max-w-5xl"
       >
         <!-- 基本信息 -->
-        <div class="mb-6">
-          <h3 class="text-base font-medium mb-4 pb-2 border-b">
-            基本信息
-          </h3>
+        <FormSection title="基本信息" icon="i-heroicons-solid:information-circle">
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="商品分类" prop="categoryId">
@@ -823,547 +519,136 @@ function handleCancel() {
           </el-form-item>
 
           <el-form-item label="商品属性">
-            <el-checkbox v-model="formData.isHot" border>
-              热门
-            </el-checkbox>
-            <el-checkbox v-model="formData.isNew" border class="ml-2">
-              新品
-            </el-checkbox>
-            <el-checkbox v-model="formData.isRecommend" border class="ml-2">
-              推荐
-            </el-checkbox>
-            <el-checkbox v-if="isEdit" v-model="formData.isEnabled" border class="ml-2">
-              已上架
-            </el-checkbox>
+            <ProductAttributes
+              v-model:isHot="formData.isHot"
+              v-model:isNew="formData.isNew"
+              v-model:isRecommend="formData.isRecommend"
+              v-model:isEnabled="formData.isEnabled"
+            />
           </el-form-item>
-        </div>
+        </FormSection>
 
         <!-- 图片信息 -->
-        <div class="mb-6">
-          <h3 class="text-base font-medium mb-4 pb-2 border-b">
-            商品图片
-          </h3>
-
+        <FormSection title="商品图片" icon="i-heroicons-solid:photo">
           <el-form-item label="图片">
-            <div class="w-full">
-              <el-upload
-                v-model:file-list="imageFileList"
-                :http-request="handleImageUpload"
-                :on-change="handleImageChange"
-                :on-remove="handleImageRemove"
-                :on-preview="handleImagePreview"
-                :before-upload="beforeImageUpload"
-                :limit="maxImageCount"
-                list-type="picture-card"
-                accept="image/*"
-                multiple
-              >
-                <FaIcon name="i-iconoir:plus" class="text-2xl" />
-              </el-upload>
-              <div class="mt-2 text-sm text-gray-500 flex items-center gap-4">
-                <p>第一张为主图，最多{{ maxImageCount }}张</p>
-                <p>建议尺寸：800x800像素，单张不超过5MB</p>
-              </div>
-            </div>
+            <ProductImageUpload v-model="formData.images" />
           </el-form-item>
-        </div>
+        </FormSection>
 
         <!-- SKU 管理 -->
-        <div class="mb-6" v-if="!isEdit">
-          <h3 class="text-base font-medium mb-4 pb-2 border-b">
-            SKU 管理
-          </h3>
+        <FormSection
+          title="SKU 管理"
+          icon="i-heroicons-solid:cube"
+          :tips="isEdit ? '提示：修改规格时会智能匹配已有的 SKU，保留价格和库存信息。' : '提示：添加商品规格（如颜色、尺寸）和规格值后，系统将自动生成所有 SKU 组合。'"
+        >
+          <SkuManager v-model="skuList" :is-edit="isEdit" />
+        </FormSection>
 
-          <!-- SKU 表单组件 -->
-          <div class="sku-form">
-            <!-- 规格选择区域 -->
-            <div class="sku-attribute-section">
-              <div class="section-header">
-                <span class="section-title">商品规格</span>
-                <el-button type="primary" size="small" @click="handleAddAttribute">
-                  <template #icon>
-                    <FaIcon name="i-iconoir:plus" />
-                  </template>
-                  添加规格
-                </el-button>
-              </div>
-
-              <!-- 空状态 -->
-              <div v-if="specAttributes.length === 0" class="empty-state">
-                <p>暂无规格，请点击"添加规格"添加商品规格</p>
-              </div>
-
-              <!-- 规格列表 -->
-              <div v-else class="attribute-list">
-                <div
-                  v-for="attr in specAttributes"
-                  :key="attr.id"
-                  class="attribute-item"
-                >
-                  <!-- 规格名称输入 -->
-                  <div class="attribute-header">
-                    <el-input
-                      v-model="attr.name"
-                      placeholder="请输入规格名称，如：颜色"
-                      class="attribute-name-input"
-                      @input="generateSkus"
-                    />
-                    <el-button
-                      v-if="specAttributes.length > 1"
-                      type="danger"
-                      size="small"
-                      link
-                      @click="handleRemoveAttribute(attr.id)"
-                    >
-                      <template #icon>
-                        <FaIcon name="i-iconoir:trash" />
-                      </template>
-                      删除
-                    </el-button>
-                  </div>
-
-                  <!-- 规格值列表 -->
-                  <div class="attribute-values">
-                    <div
-                      v-for="value in attr.values"
-                      :key="value.id"
-                      class="value-tag"
-                    >
-                      <el-input
-                        v-model="value.name"
-                        placeholder="规格值"
-                        size="small"
-                        class="value-input"
-                        @input="generateSkus"
-                      />
-                      <el-icon class="value-close" @click="handleRemoveValue(attr.id, value.id)">
-                        <Close />
-                      </el-icon>
-                    </div>
-                    <el-button
-                      size="small"
-                      class="add-value-btn"
-                      @click="handleAddValue(attr.id)"
-                    >
-                      <el-icon><Plus /></el-icon>
-                      添加规格值
-                    </el-button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- SKU 表格区域 -->
-            <div v-if="skuList.length > 0" class="sku-table-section">
-              <div class="section-header">
-                <span class="section-title">规格库存设置</span>
-                <el-text type="info" size="small">
-                  {{ specAttributes.length > 0 && specAttributes.some(a => a.name && a.values.length) ? `已生成 ${skuList.length} 个 SKU 组合` : '默认规格' }}
-                </el-text>
-              </div>
-
-              <div class="sku-table-wrapper">
-                <table class="sku-table">
-                  <thead>
-                    <tr>
-                      <!-- 有规格时显示规格列，没有规格时显示默认列 -->
-                      <th v-if="specAttributes.length === 0 || !specAttributes.some(a => a.name && a.values.length)" class="spec-col">
-                        规格
-                      </th>
-                      <th v-else
-                        v-for="attr in specAttributes.filter(a => a.name && a.values.length)"
-                        :key="attr.id"
-                        class="spec-col"
-                      >
-                        {{ attr.name }}
-                      </th>
-                      <!-- 固定列 -->
-                      <th class="price-col">售价(元)</th>
-                      <th class="price-col">原价(元)</th>
-                      <th class="price-col">成本价(元)</th>
-                      <th class="stock-col">库存</th>
-                      <th class="stock-col">预警库存</th>
-                      <th class="image-col">SKU图片</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="sku in skuList" :key="sku.id">
-                      <!-- 规格值列 -->
-                      <td v-if="specAttributes.length === 0 || !specAttributes.some(a => a.name && a.values.length)" class="spec-col">
-                        默认规格
-                      </td>
-                      <td v-else
-                        v-for="attr in specAttributes.filter(a => a.name && a.values.length)"
-                        :key="attr.id"
-                        class="spec-col"
-                      >
-                        {{ sku.specs[attr.name] || '-' }}
-                      </td>
-                      <!-- 固定列 -->
-                      <td class="price-col">
-                        <el-input-number
-                          v-model="sku.price"
-                          :min="0"
-                          :precision="2"
-                          :step="0.01"
-                          controls-position="right"
-                          class="w-full"
-                        />
-                      </td>
-                      <td class="price-col">
-                        <el-input-number
-                          v-model="sku.originalPrice"
-                          :min="0"
-                          :precision="2"
-                          :step="0.01"
-                          controls-position="right"
-                          class="w-full"
-                          placeholder="原价"
-                        />
-                      </td>
-                      <td class="price-col">
-                        <el-input-number
-                          v-model="sku.costPrice"
-                          :min="0"
-                          :precision="2"
-                          :step="0.01"
-                          controls-position="right"
-                          class="w-full"
-                          placeholder="成本价"
-                        />
-                      </td>
-                      <td class="stock-col">
-                        <el-input-number
-                          v-model="sku.stock"
-                          :min="0"
-                          :step="1"
-                          controls-position="right"
-                          class="w-full"
-                        />
-                      </td>
-                      <td class="stock-col">
-                        <el-input-number
-                          v-model="sku.lowStock"
-                          :min="0"
-                          :step="1"
-                          controls-position="right"
-                          class="w-full"
-                        />
-                      </td>
-                      <td class="image-col">
-                        <el-upload
-                          :http-request="(options) => handleSkuImageUpload(options, sku.id)"
-                          :show-file-list="false"
-                          :before-upload="beforeSkuImageUpload"
-                          accept="image/*"
-                          class="sku-image-uploader"
-                        >
-                          <img v-if="sku.image" :src="sku.image" class="sku-image-thumb">
-                          <div v-else class="sku-image-placeholder">
-                            <FaIcon name="i-iconoir:plus" />
-                          </div>
-                        </el-upload>
-                        <el-button
-                          v-if="sku.image"
-                          type="danger"
-                          size="small"
-                          link
-                          @click="sku.image = undefined"
-                          class="sku-image-remove"
-                        >
-                          <template #icon>
-                            <FaIcon name="i-iconoir:trash" />
-                          </template>
-                        </el-button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <!-- 商品详情 -->
+        <FormSection title="商品详情" icon="i-heroicons-solid:document-text">
+          <div class="editor-wrapper">
+            <div ref="toolbarRef" class="editor-toolbar"></div>
+            <div ref="editorRef" class="editor-content"></div>
           </div>
-
-          <div class="mt-2 text-sm text-gray-500">
-            <p>提示：添加商品规格（如颜色、尺寸）和规格值后，系统将自动生成所有 SKU 组合。</p>
-          </div>
-        </div>
-
-        <!-- 编辑模式 SKU 显示 -->
-        <div class="mb-6" v-else>
-          <h3 class="text-base font-medium mb-4 pb-2 border-b">
-            SKU 管理
-          </h3>
-
-          <!-- SKU 表单组件 -->
-          <div class="sku-form">
-            <!-- 规格选择区域 -->
-            <div class="sku-attribute-section">
-              <div class="section-header">
-                <span class="section-title">商品规格</span>
-                <el-button type="primary" size="small" @click="handleAddAttribute">
-                  <template #icon>
-                    <FaIcon name="i-iconoir:plus" />
-                  </template>
-                  添加规格
-                </el-button>
-              </div>
-
-              <!-- 空状态 -->
-              <div v-if="specAttributes.length === 0" class="empty-state">
-                <p>暂无规格，请点击"添加规格"添加商品规格</p>
-              </div>
-
-              <!-- 规格列表 -->
-              <div v-else class="attribute-list">
-                <div
-                  v-for="attr in specAttributes"
-                  :key="attr.id"
-                  class="attribute-item"
-                >
-                  <!-- 规格名称输入 -->
-                  <div class="attribute-header">
-                    <el-input
-                      v-model="attr.name"
-                      placeholder="请输入规格名称，如：颜色"
-                      class="attribute-name-input"
-                      @input="generateSkus"
-                    />
-                    <el-button
-                      v-if="specAttributes.length > 1"
-                      type="danger"
-                      size="small"
-                      link
-                      @click="handleRemoveAttribute(attr.id)"
-                    >
-                      <template #icon>
-                        <FaIcon name="i-iconoir:trash" />
-                      </template>
-                      删除
-                    </el-button>
-                  </div>
-
-                  <!-- 规格值列表 -->
-                  <div class="attribute-values">
-                    <div
-                      v-for="value in attr.values"
-                      :key="value.id"
-                      class="value-tag"
-                    >
-                      <el-input
-                        v-model="value.name"
-                        placeholder="规格值"
-                        size="small"
-                        class="value-input"
-                        @input="generateSkus"
-                      />
-                      <el-icon class="value-close" @click="handleRemoveValue(attr.id, value.id)">
-                        <Close />
-                      </el-icon>
-                    </div>
-                    <el-button
-                      size="small"
-                      class="add-value-btn"
-                      @click="handleAddValue(attr.id)"
-                    >
-                      <el-icon><Plus /></el-icon>
-                      添加规格值
-                    </el-button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- SKU 表格区域 -->
-            <div v-if="skuList.length > 0" class="sku-table-section">
-              <div class="section-header">
-                <span class="section-title">规格库存设置</span>
-                <el-text type="info" size="small">
-                  {{ specAttributes.length > 0 && specAttributes.some(a => a.name && a.values.length) ? `共 ${skuList.length} 个 SKU` : '默认规格' }}
-                </el-text>
-              </div>
-
-              <div class="sku-table-wrapper">
-                <table class="sku-table">
-                  <thead>
-                    <tr>
-                      <!-- 有规格时显示规格列，没有规格时显示默认列 -->
-                      <th v-if="specAttributes.length === 0 || !specAttributes.some(a => a.name && a.values.length)" class="spec-col">
-                        规格
-                      </th>
-                      <th v-else
-                        v-for="attr in specAttributes.filter(a => a.name && a.values.length)"
-                        :key="attr.id"
-                        class="spec-col"
-                      >
-                        {{ attr.name }}
-                      </th>
-                      <!-- 固定列 -->
-                      <th class="price-col">售价(元)</th>
-                      <th class="price-col">原价(元)</th>
-                      <th class="price-col">成本价(元)</th>
-                      <th class="stock-col">库存</th>
-                      <th class="stock-col">预警库存</th>
-                      <th class="image-col">SKU图片</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="sku in skuList" :key="sku.id">
-                      <!-- 规格值列 -->
-                      <td v-if="specAttributes.length === 0 || !specAttributes.some(a => a.name && a.values.length)" class="spec-col">
-                        默认规格
-                      </td>
-                      <td v-else
-                        v-for="attr in specAttributes.filter(a => a.name && a.values.length)"
-                        :key="attr.id"
-                        class="spec-col"
-                      >
-                        {{ sku.specs[attr.name] || '-' }}
-                      </td>
-                      <!-- 固定列 -->
-                      <td class="price-col">
-                        <el-input-number
-                          v-model="sku.price"
-                          :min="0"
-                          :precision="2"
-                          :step="0.01"
-                          controls-position="right"
-                          class="w-full"
-                        />
-                      </td>
-                      <td class="price-col">
-                        <el-input-number
-                          v-model="sku.originalPrice"
-                          :min="0"
-                          :precision="2"
-                          :step="0.01"
-                          controls-position="right"
-                          class="w-full"
-                          placeholder="原价"
-                        />
-                      </td>
-                      <td class="price-col">
-                        <el-input-number
-                          v-model="sku.costPrice"
-                          :min="0"
-                          :precision="2"
-                          :step="0.01"
-                          controls-position="right"
-                          class="w-full"
-                          placeholder="成本价"
-                        />
-                      </td>
-                      <td class="stock-col">
-                        <el-input-number
-                          v-model="sku.stock"
-                          :min="0"
-                          :step="1"
-                          controls-position="right"
-                          class="w-full"
-                        />
-                      </td>
-                      <td class="stock-col">
-                        <el-input-number
-                          v-model="sku.lowStock"
-                          :min="0"
-                          :step="1"
-                          controls-position="right"
-                          class="w-full"
-                        />
-                      </td>
-                      <td class="image-col">
-                        <el-upload
-                          :http-request="(options) => handleSkuImageUpload(options, sku.id)"
-                          :show-file-list="false"
-                          :before-upload="beforeSkuImageUpload"
-                          accept="image/*"
-                          class="sku-image-uploader"
-                        >
-                          <img v-if="sku.image" :src="sku.image" class="sku-image-thumb">
-                          <div v-else class="sku-image-placeholder">
-                            <FaIcon name="i-iconoir:plus" />
-                          </div>
-                        </el-upload>
-                        <el-button
-                          v-if="sku.image"
-                          type="danger"
-                          size="small"
-                          link
-                          @click="sku.image = undefined"
-                          class="sku-image-remove"
-                        >
-                          <template #icon>
-                            <FaIcon name="i-iconoir:trash" />
-                          </template>
-                        </el-button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-2 text-sm text-gray-500">
-            <p>提示：修改规格时会智能匹配已有的 SKU，保留价格和库存信息。</p>
-          </div>
-        </div>
-
-        <!-- 详情内容 -->
-        <div class="mb-6">
-          <h3 class="text-base font-medium mb-4 pb-2 border-b">
-            商品详情
-          </h3>
-          <div class="w-full border border-gray-200 rounded-lg">
-            <div ref="toolbarRef" class="border-b border-gray-200"></div>
-            <div ref="editorRef" class="min-h-[300px]"></div>
-          </div>
-        </div>
+        </FormSection>
       </el-form>
 
-      <!-- 底部操作按钮 -->
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <FaButton variant="ghost" @click="handleCancel">
-            取消
-          </FaButton>
+      <!-- 底部按钮 -->
+      <div class="form-footer">
+        <div class="form-footer-actions">
           <FaButton :loading="saving" @click="handleSubmit">
             <template #icon>
               <FaIcon name="i-iconoir:check" />
             </template>
             保存
           </FaButton>
+          <FaButton variant="ghost" @click="handleCancel">
+            取消
+          </FaButton>
         </div>
-      </template>
+      </div>
     </FaCard>
-
-    <!-- 图片预览对话框 -->
-    <el-dialog v-model="previewImageVisible" title="图片预览" width="600px">
-      <img :src="previewImageUrl" class="w-full">
-    </el-dialog>
   </div>
 </template>
 
 <style scoped>
-.shop-product-form :deep(.el-form-item__label) {
-  font-weight: 500;
+/* 商品表单卡片 */
+.product-form-card {
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.shop-product-form :deep(.el-table) {
+/* 表单头部 */
+.form-card-header {
+  display: flex;
+  align-items: center;
+}
+
+.form-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.form-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.form-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.form-subtitle {
   font-size: 13px;
+  color: hsl(var(--foreground) / 0.5);
+  margin-top: 2px;
+}
+
+/* 底部按钮 */
+.form-footer {
+  padding: 16px 20px;
+  border-top: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.1);
+}
+
+.form-footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 编辑器 */
+.editor-wrapper {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.editor-toolbar {
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 8px;
+}
+
+.editor-content {
+  min-height: 300px;
+}
+
+.shop-product-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.8);
 }
 
 .shop-product-form :deep(.el-input-number) {
   width: 100%;
-}
-
-.shop-product-form :deep(.el-upload--picture-card) {
-  width: 100px;
-  height: 100px;
-}
-
-.shop-product-form :deep(.el-upload-list--picture-card .el-upload-list__item) {
-  width: 100px;
-  height: 100px;
 }
 </style>
 
@@ -1374,200 +659,5 @@ function handleCancel() {
 }
 .shop-product-form .w-e-toolbar {
   background-color: #fff;
-}
-
-/* SKU 表单样式 */
-.sku-form {
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-/* 规格选择区域 */
-.sku-attribute-section {
-  padding: 16px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.sku-table-section {
-  padding: 16px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.empty-state {
-  padding: 40px 0;
-  text-align: center;
-  color: #909399;
-  font-size: 14px;
-  background-color: #fafafa;
-  border-radius: 4px;
-}
-
-.attribute-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.attribute-item {
-  padding: 16px;
-  background-color: #fafafa;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-}
-
-.attribute-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.attribute-name-input {
-  width: 280px;
-}
-
-.attribute-values {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.value-tag {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.value-tag .value-input {
-  width: 120px;
-}
-
-.value-tag .value-close {
-  position: absolute;
-  right: -8px;
-  top: -8px;
-  width: 16px;
-  height: 16px;
-  background-color: #f56c6c;
-  color: #fff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.value-tag .value-close:hover {
-  background-color: #f23434;
-}
-
-.add-value-btn {
-  height: 32px;
-  padding: 0 12px;
-  border-style: dashed;
-}
-
-/* SKU 表格 */
-.sku-table-wrapper {
-  overflow-x: auto;
-}
-
-.sku-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.sku-table th,
-.sku-table td {
-  border: 1px solid #ebeef5;
-  padding: 12px;
-  text-align: left;
-}
-
-.sku-table th {
-  background-color: #f5f7fa;
-  color: #606266;
-  font-weight: 500;
-}
-
-.sku-table tbody tr:hover {
-  background-color: #f5f7fa;
-}
-
-.spec-col {
-  min-width: 100px;
-}
-
-.price-col {
-  min-width: 140px;
-}
-
-.stock-col {
-  min-width: 120px;
-}
-
-.image-col {
-  min-width: 100px;
-  width: 100px;
-}
-
-/* SKU 图片上传 */
-.sku-image-uploader {
-  display: inline-block;
-}
-
-.sku-image-uploader :deep(.el-upload) {
-  border: 1px dashed #d9d9d9;
-  border-radius: 4px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sku-image-uploader :deep(.el-upload:hover) {
-  border-color: var(--el-color-primary);
-}
-
-.sku-image-thumb {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  display: block;
-}
-
-.sku-image-placeholder {
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8c939d;
-  font-size: 18px;
-}
-
-.sku-image-remove {
-  margin-left: 4px;
 }
 </style>

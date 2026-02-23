@@ -169,7 +169,8 @@ async function getRoleList() {
   loading.value = true
   try {
     const res = await roleApi.getList()
-    roleList.value = res.data
+    // 按 sort 升序排序
+    roleList.value = res.data.sort((a, b) => (a.sort || 0) - (b.sort || 0))
   }
   finally {
     loading.value = false
@@ -268,21 +269,35 @@ onMounted(() => {
 <template>
   <div class="system-role-auth h-full flex flex-col">
     <!-- 权限说明 -->
-    <FaCard class="mb-4">
-      <div class="text-sm text-gray-600">
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2 font-medium">
-            <FaIcon name="i-iconoir:info" class="mr-1" />
-            权限说明
+    <div class="auth-info-card mb-4">
+      <div class="auth-info-header">
+        <FaIcon name="i-heroicons-solid:information-circle" class="size-5" />
+        <span class="auth-info-title">权限说明</span>
+      </div>
+      <div class="auth-info-body">
+        <div class="auth-info-section">
+          <span class="auth-info-label">权限类型：</span>
+          <div class="auth-info-tags">
+            <span class="auth-tag auth-tag-menu">
+              <FaIcon name="i-heroicons-solid:menu" class="size-3.5" />
+              菜单
+            </span>
+            <span class="auth-tag auth-tag-page">
+              <FaIcon name="i-heroicons-solid:document" class="size-3.5" />
+              页面
+            </span>
+            <span class="auth-tag auth-tag-button">
+              <FaIcon name="i-heroicons-solid:finger-print" class="size-3.5" />
+              按钮
+            </span>
           </div>
-          <span class="text-gray-400">|</span>
-          <span>权限类型：</span>
-          <el-tag size="small" type="primary">菜单</el-tag>
-          <el-tag size="small" type="success">页面</el-tag>
-          <el-tag size="small" type="warning">按钮</el-tag>
+        </div>
+        <div class="auth-info-section">
+          <span class="auth-info-label">操作提示：</span>
+          <span class="auth-info-hint">从左侧选择角色，然后在右侧配置对应的权限</span>
         </div>
       </div>
-    </FaCard>
+    </div>
 
     <!-- 主体内容区 -->
     <div class="flex flex-1 gap-4 min-h-0">
@@ -378,6 +393,87 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 权限说明卡片 */
+.auth-info-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: hsl(var(--muted) / 0.12);
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.05);
+}
+
+.auth-info-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: linear-gradient(90deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--muted) / 0.12) 100%);
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--primary));
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.auth-info-title {
+  font-size: 14px;
+}
+
+.auth-info-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: hsl(var(--muted) / 0.12);
+}
+
+.auth-info-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-info-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.7);
+  min-width: 80px;
+}
+
+.auth-info-tags {
+  display: flex;
+  gap: 10px;
+}
+
+.auth-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.auth-tag-menu {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.auth-tag-page {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.auth-tag-button {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.auth-info-hint {
+  font-size: 13px;
+  color: hsl(var(--foreground) / 0.6);
+}
+
 .role-list {
   max-height: calc(100vh - 300px);
   overflow-y: auto;

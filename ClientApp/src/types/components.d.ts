@@ -55,6 +55,7 @@ declare module 'vue' {
     FaTextarea: typeof import('./../ui/components/FaTextarea/index.vue')['default']
     FaToast: typeof import('./../ui/components/FaToast/index.vue')['default']
     FaTooltip: typeof import('./../ui/components/FaTooltip/index.vue')['default']
+    FormSection: typeof import('./../ui/components/FormSection/index.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
@@ -105,6 +106,7 @@ declare global {
   const FaTextarea: typeof import('./../ui/components/FaTextarea/index.vue')['default']
   const FaToast: typeof import('./../ui/components/FaToast/index.vue')['default']
   const FaTooltip: typeof import('./../ui/components/FaTooltip/index.vue')['default']
+  const FormSection: typeof import('./../ui/components/FormSection/index.vue')['default']
   const RouterLink: typeof import('vue-router')['RouterLink']
   const RouterView: typeof import('vue-router')['RouterView']
 }

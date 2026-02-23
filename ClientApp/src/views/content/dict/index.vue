@@ -334,31 +334,50 @@ onMounted(() => {
 <template>
   <div class="content-dict p-4">
     <!-- 搜索表单 -->
-    <FaCard class="mb-4">
-      <div class="p-4">
-        <el-form :model="searchForm" inline>
-          <el-form-item label="字典类型">
-            <el-select v-model="searchForm.type" placeholder="请选择字典类型" clearable class="w-40">
+    <FaCard class="search-card mb-4">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
+          <span>字典筛选</span>
+        </div>
+      </div>
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">字典类型</label>
+            <el-select v-model="searchForm.type" placeholder="请选择字典类型" clearable class="w-full">
               <el-option
                 v-for="item in dictionaryTypeOptions"
                 :key="item.value"
                 :label="item.label"
                 :value="item.value"
-              />
+              >
+                <span class="flex items-center gap-2">
+                  <FaIcon
+                    :name="item.value === 0 ? 'i-heroicons-solid:cog' : 'i-heroicons-solid:book-open'"
+                    class="size-4"
+                    :class="item.value === 0 ? 'text-blue-500' : 'text-green-500'"
+                  />
+                  {{ item.label }}
+                </span>
+              </el-option>
             </el-select>
-          </el-form-item>
-          <el-form-item>
-            <FaButton @click="handleSearch">
-              <template #icon>
-                <FaIcon name="i-mage-icons:search" />
-              </template>
-              搜索
-            </FaButton>
-            <FaButton variant="ghost" @click="handleReset">
-              重置
-            </FaButton>
-          </el-form-item>
-        </el-form>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
+        <FaButton @click="handleSearch">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:magnifying-glass" />
+          </template>
+          搜索
+        </FaButton>
+        <FaButton class="search-reset-btn" @click="handleReset">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:arrow-path" />
+          </template>
+          重置
+        </FaButton>
       </div>
     </FaCard>
 
