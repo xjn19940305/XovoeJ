@@ -46,6 +46,7 @@
 	  <ProjectReference Include="..\Infrastructure\XovoeJ.Persistence.PostgreSql\XovoeJ.Persistence.PostgreSql.csproj" />
 	  <ProjectReference Include="..\Infrastructure\XovoeJ.SignalR\XovoeJ.SignalR.csproj" />
 	  <ProjectReference Include="..\Infrastructure\XovoeJ.Storage.Minio\XovoeJ.Storage.Minio.csproj" />
+	  <ProjectReference Include="..\Infrastructure\XovoeJ.Workflow\XovoeJ.Workflow.csproj" />
 	  <ProjectReference Include="..\Shared\XovoeJ.Abstractions\XovoeJ.Abstractions.csproj" />
 	  <ProjectReference Include="..\Shared\XovoeJ.Contracts\XovoeJ.Contracts.csproj" />
 	  <ProjectReference Include="..\Shared\XovoeJ.Enum\XovoeJ.Enum.csproj" />

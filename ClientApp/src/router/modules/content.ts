@@ -10,7 +10,7 @@ const contentRoute: Route.recordMainRaw = {
     title: '内容管理',
     icon: 'i-heroicons-solid:document-text',
     // 只要有任何一个子权限就能看到菜单
-    auth: ['content:view', 'content:banner:view', 'content:dict:view'],
+    auth: ['content:view', 'content:banner:view', 'content:dict:view', 'content:workflow:view'],
   },
   children: [
     {
@@ -22,7 +22,7 @@ const contentRoute: Route.recordMainRaw = {
         title: '内容管理',
         icon: 'i-heroicons-solid:document-text',
         // 只要有任何一个子权限就能看到菜单
-        auth: ['content:view', 'content:banner:view'],
+        auth: ['content:view', 'content:banner:view', 'content:dict:view', 'content:workflow:view'],
       },
       children: [
         {
@@ -43,6 +43,16 @@ const contentRoute: Route.recordMainRaw = {
             title: '字典管理',
             icon: 'i-heroicons-solid:book-open',
             auth: ['content:dict:view'],
+          },
+        },
+        {
+          path: 'workflow',
+          name: 'ContentWorkflow',
+          component: () => import('@/views/content/workflow/index.vue'),
+          meta: {
+            title: '工作流配置',
+            icon: 'i-heroicons-solid:academic-cap',
+            auth: ['content:workflow:view'],
           },
         },
       ],

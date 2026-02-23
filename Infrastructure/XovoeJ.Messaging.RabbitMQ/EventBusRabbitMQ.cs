@@ -164,7 +164,7 @@ namespace XovoeJ.Messaging.RabbitMQ
 
             if (_consumerChannel != null)
             {
-                var consumer = new EventingBasicConsumer(_consumerChannel);
+                var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
                 consumer.Received += Consumer_Received;
 
                 _consumerTag = _consumerChannel.BasicConsume(
@@ -174,7 +174,7 @@ namespace XovoeJ.Messaging.RabbitMQ
             }
         }
 
-        private async void Consumer_Received(object? sender, BasicDeliverEventArgs eventArgs)
+        private async Task Consumer_Received(object? sender, BasicDeliverEventArgs eventArgs)
         {
             var eventName = eventArgs.RoutingKey;
             var message = Encoding.UTF8.GetString(eventArgs.Body.ToArray());

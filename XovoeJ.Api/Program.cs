@@ -350,6 +350,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IDictionaryService, DictionaryService>();
 builder.Services.AddMinioService(builder.Configuration);
 builder.Services.AddRabbitMQEventBus(builder.Configuration, "XovoeJ.Api");
+builder.Services.AddScoped<XovoeJ.Abstractions.Services.IWorkflowService, XovoeJ.Workflow.Services.WorkflowService>();
 
 // 注册事件处理器
 builder.Services.AddScoped<OrderCreatedEventHandler>();

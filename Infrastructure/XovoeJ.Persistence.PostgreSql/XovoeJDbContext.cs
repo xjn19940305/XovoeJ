@@ -15,6 +15,10 @@ namespace XovoeJ.Persistence.PostgreSql
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<DictionaryGroup> DictionaryGroups { get; set; }
         public DbSet<DictionaryItem> DictionaryItems { get; set; }
+        public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
+        public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
+        public DbSet<WorkflowPendingItem> WorkflowPendingItems { get; set; }
+        public DbSet<WorkflowApprovalRecord> WorkflowApprovalRecords { get; set; }
 
         public XovoeJDbContext(DbContextOptions options) : base(options)
         {
@@ -102,6 +106,41 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(i => i.GroupId);
                 build.HasIndex(i => i.Key).IsUnique();
                 build.HasIndex(i => i.IsEnabled);
+            });
+
+            // WorkflowDefinition 配置
+            modelBuilder.Entity<WorkflowDefinition>(build =>
+            {
+                build.HasIndex(d => d.Code).IsUnique();
+                build.HasIndex(d => d.Type);
+                build.HasIndex(d => d.IsEnabled);
+            });
+
+            // WorkflowInstance 配置
+            modelBuilder.Entity<WorkflowInstance>(build =>
+            {
+                build.HasIndex(i => i.WorkflowCode);
+                build.HasIndex(i => i.InitiatorId);
+                build.HasIndex(i => i.BusinessKey);
+                build.HasIndex(i => i.Status);
+                build.HasIndex(i => i.CreatedAt);
+            });
+
+            // WorkflowPendingItem 配置
+            modelBuilder.Entity<WorkflowPendingItem>(build =>
+            {
+                build.HasIndex(p => p.InstanceId);
+                build.HasIndex(p => p.ApproverId);
+                build.HasIndex(p => new { p.InstanceId, p.ApproverId });
+            });
+
+            // WorkflowApprovalRecord 配置
+            modelBuilder.Entity<WorkflowApprovalRecord>(build =>
+            {
+                build.HasIndex(r => r.InstanceId);
+                build.HasIndex(r => r.StepId);
+                build.HasIndex(r => r.ApproverId);
+                build.HasIndex(r => r.ActionTime);
             });
         }
     }
