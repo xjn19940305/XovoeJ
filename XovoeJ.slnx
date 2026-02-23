@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/Infrastructure/">
     <Project Path="Infrastructure/XovoeJ.Infrastructure/XovoeJ.Infrastructure.csproj" Id="5944ec07-3e6b-4d9b-96ca-859a08d45e08" />
+    <Project Path="Infrastructure/XovoeJ.Messaging.RabbitMQ/XovoeJ.Messaging.RabbitMQ.csproj" Id="f07ba49c-9004-4a2b-8817-c2a6b7e99d76" />
     <Project Path="Infrastructure/XovoeJ.Persistence.PostgreSql/XovoeJ.Persistence.PostgreSql.csproj" Id="651ad6a7-b7f5-4edb-94a4-9a44b143e9a9" />
     <Project Path="Infrastructure/XovoeJ.SignalR/XovoeJ.SignalR.csproj" Id="865a6065-3179-4360-a848-3bec9eb10e44" />
     <Project Path="Infrastructure/XovoeJ.Storage.Minio/XovoeJ.Storage.Minio.csproj" Id="52e9f148-caf2-44fc-ba19-ed9bffe7c86f" />
@@ -15,6 +16,10 @@
     <Project Path="Shared/XovoeJ.Abstractions/XovoeJ.Abstractions.csproj" Id="9878943a-4c05-4926-b00e-6b250703321e" />
     <Project Path="Shared/XovoeJ.Contracts/XovoeJ.Contracts.csproj" Id="a32121fe-50ee-4d2e-a9e6-b13ca63ccc5e" />
     <Project Path="Shared/XovoeJ.Enum/XovoeJ.Enum.csproj" Id="29511437-579e-47e0-bce6-3ca86f9a4135" />
+    <Project Path="Shared/XovoeJ.EventBus/XovoeJ.EventBus.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
   </Folder>
   <Project Path="XovoeJ.Api/XovoeJ.Api.csproj" Id="cfee165e-b75b-4ca3-a742-7d1497bb4527" />
 </Solution>

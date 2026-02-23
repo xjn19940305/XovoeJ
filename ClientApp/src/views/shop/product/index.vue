@@ -43,7 +43,10 @@ const categoryTreeOptions = computed(() => {
       children: item.children?.length ? buildTree(item.children) : undefined,
     }))
   }
-  return buildTree(categoryTreeData.value)
+  return [
+    { value: '', label: '请选择' },
+    ...buildTree(categoryTreeData.value),
+  ]
 })
 
 // 获取商品列表
@@ -53,8 +56,25 @@ async function getProductList() {
     const params: Api.Product.ProductListParams = {
       page: currentPage.value,
       pageSize: pageSize.value,
-      ...searchForm.value,
     }
+
+    // 只添加有值的搜索条件
+    if (searchForm.value.keyword) {
+      params.keyword = searchForm.value.keyword
+    }
+    if (searchForm.value.categoryId) {
+      params.categoryId = searchForm.value.categoryId
+    }
+    if (searchForm.value.isHot !== undefined) {
+      params.isHot = searchForm.value.isHot
+    }
+    if (searchForm.value.isNew !== undefined) {
+      params.isNew = searchForm.value.isNew
+    }
+    if (searchForm.value.isRecommend !== undefined) {
+      params.isRecommend = searchForm.value.isRecommend
+    }
+
     const res = await productApi.getList(params)
     tableData.value = res.data.items
     total.value = res.data.total

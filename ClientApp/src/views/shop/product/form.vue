@@ -321,6 +321,60 @@ const handleImageRemove: UploadProps['onRemove'] = () => {
   return true
 }
 
+// 图片预览
+const handleImagePreview: UploadProps['onPreview'] = (file) => {
+  previewImageUrl.value = file.url || (file.response as any)?.url || ''
+  previewImageVisible.value = true
+}
+
+// SKU 图片上传前校验
+const beforeSkuImageUpload: UploadProps['beforeUpload'] = (rawFile) => {
+  if (!rawFile.type.startsWith('image/')) {
+    ElMessage.error('请上传图片文件')
+    return false
+  }
+  else if (rawFile.size / 1024 / 1024 > 5) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return false
+  }
+  return true
+}
+
+// SKU 图片上传
+async function handleSkuImageUpload(options: { file: File; onSuccess: (response: any, file?: File) => void; onError: (error: Error) => void }, skuId: string) {
+  const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
+  const formData = new FormData()
+  formData.append('file', options.file)
+
+  try {
+    // 上传文件
+    const response = await fetch(`${baseURL}/api/files/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+    const result = await response.json()
+
+    if (result.key) {
+      // 获取永久访问 URL
+      const permanentUrl = await getPermanentUrl(result.key)
+
+      // 找到对应的 SKU 并设置图片
+      const sku = skuList.value.find(s => s.id === skuId)
+      if (sku) {
+        sku.image = permanentUrl
+      }
+
+      options.onSuccess({ key: result.key, url: permanentUrl }, options.file)
+    }
+    else {
+      options.onError(new Error(result.message || '上传失败'))
+    }
+  }
+  catch (error) {
+    options.onError(error as Error)
+  }
+}
+
 // 获取分类树
 async function getCategoryTree() {
   const res = await categoryApi.getTree()
@@ -797,6 +851,7 @@ function handleCancel() {
                 :http-request="handleImageUpload"
                 :on-change="handleImageChange"
                 :on-remove="handleImageRemove"
+                :on-preview="handleImagePreview"
                 :before-upload="beforeImageUpload"
                 :limit="maxImageCount"
                 list-type="picture-card"
@@ -928,6 +983,7 @@ function handleCancel() {
                       <th class="price-col">成本价(元)</th>
                       <th class="stock-col">库存</th>
                       <th class="stock-col">预警库存</th>
+                      <th class="image-col">SKU图片</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -993,6 +1049,32 @@ function handleCancel() {
                           controls-position="right"
                           class="w-full"
                         />
+                      </td>
+                      <td class="image-col">
+                        <el-upload
+                          :http-request="(options) => handleSkuImageUpload(options, sku.id)"
+                          :show-file-list="false"
+                          :before-upload="beforeSkuImageUpload"
+                          accept="image/*"
+                          class="sku-image-uploader"
+                        >
+                          <img v-if="sku.image" :src="sku.image" class="sku-image-thumb">
+                          <div v-else class="sku-image-placeholder">
+                            <FaIcon name="i-iconoir:plus" />
+                          </div>
+                        </el-upload>
+                        <el-button
+                          v-if="sku.image"
+                          type="danger"
+                          size="small"
+                          link
+                          @click="sku.image = undefined"
+                          class="sku-image-remove"
+                        >
+                          <template #icon>
+                            <FaIcon name="i-iconoir:trash" />
+                          </template>
+                        </el-button>
                       </td>
                     </tr>
                   </tbody>
@@ -1121,6 +1203,7 @@ function handleCancel() {
                       <th class="price-col">成本价(元)</th>
                       <th class="stock-col">库存</th>
                       <th class="stock-col">预警库存</th>
+                      <th class="image-col">SKU图片</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1186,6 +1269,32 @@ function handleCancel() {
                           controls-position="right"
                           class="w-full"
                         />
+                      </td>
+                      <td class="image-col">
+                        <el-upload
+                          :http-request="(options) => handleSkuImageUpload(options, sku.id)"
+                          :show-file-list="false"
+                          :before-upload="beforeSkuImageUpload"
+                          accept="image/*"
+                          class="sku-image-uploader"
+                        >
+                          <img v-if="sku.image" :src="sku.image" class="sku-image-thumb">
+                          <div v-else class="sku-image-placeholder">
+                            <FaIcon name="i-iconoir:plus" />
+                          </div>
+                        </el-upload>
+                        <el-button
+                          v-if="sku.image"
+                          type="danger"
+                          size="small"
+                          link
+                          @click="sku.image = undefined"
+                          class="sku-image-remove"
+                        >
+                          <template #icon>
+                            <FaIcon name="i-iconoir:trash" />
+                          </template>
+                        </el-button>
                       </td>
                     </tr>
                   </tbody>
@@ -1411,5 +1520,54 @@ function handleCancel() {
 
 .stock-col {
   min-width: 120px;
+}
+
+.image-col {
+  min-width: 100px;
+  width: 100px;
+}
+
+/* SKU 图片上传 */
+.sku-image-uploader {
+  display: inline-block;
+}
+
+.sku-image-uploader :deep(.el-upload) {
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sku-image-uploader :deep(.el-upload:hover) {
+  border-color: var(--el-color-primary);
+}
+
+.sku-image-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  display: block;
+}
+
+.sku-image-placeholder {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c939d;
+  font-size: 18px;
+}
+
+.sku-image-remove {
+  margin-left: 4px;
 }
 </style>

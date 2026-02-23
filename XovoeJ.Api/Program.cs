@@ -15,14 +15,16 @@ using System.Data;
 using System.Reflection;
 using System.Text;
 using XovoeJ.Abstractions.Services;
+using XovoeJ.Api.EventHandlers;
 using XovoeJ.Api.Swaggers;
 using XovoeJ.Application.Options;
 using XovoeJ.Application.Services;
 using XovoeJ.Entities;
+using XovoeJ.EventBus.Abstractions;
 using XovoeJ.Infrastructure.Filters;
 using XovoeJ.Persistence.PostgreSql;
 using XovoeJ.Storage.Minio;
-
+using XovoeJ.Messaging.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
@@ -345,12 +347,22 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
-
+builder.Services.AddScoped<IDictionaryService, DictionaryService>();
 builder.Services.AddMinioService(builder.Configuration);
+builder.Services.AddRabbitMQEventBus(builder.Configuration, "XovoeJ.Api");
 
+// 注册事件处理器
+builder.Services.AddScoped<OrderCreatedEventHandler>();
+builder.Services.AddScoped<OrderPaidEventHandler>();
+builder.Services.AddScoped<OrderCancelledEventHandler>();
 
 var app = builder.Build();
 
+// 配置事件总线订阅
+var eventBus = app.Services.GetRequiredService<IEventBus>();
+eventBus.Subscribe<XovoeJ.EventBus.Events.OrderCreatedEvent, OrderCreatedEventHandler>();
+eventBus.Subscribe<XovoeJ.EventBus.Events.OrderPaidEvent, OrderPaidEventHandler>();
+eventBus.Subscribe<XovoeJ.EventBus.Events.OrderCancelledEvent, OrderCancelledEventHandler>();
 
 // Init data if needed
 if (builder.Configuration.GetValue<bool>("Init"))

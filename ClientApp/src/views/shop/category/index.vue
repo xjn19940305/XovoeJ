@@ -318,7 +318,7 @@ onMounted(() => {
           </el-select>
         </el-form-item>
         <el-form-item label="图标">
-          <el-input v-model="formData.icon" placeholder="请输入图标类名" />
+          <FaIconPicker v-model="formData.icon" />
         </el-form-item>
         <el-form-item label="图片">
           <el-input v-model="formData.image" placeholder="请输入图片URL" />

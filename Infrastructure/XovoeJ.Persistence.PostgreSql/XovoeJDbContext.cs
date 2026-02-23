@@ -13,6 +13,8 @@ namespace XovoeJ.Persistence.PostgreSql
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<DictionaryGroup> DictionaryGroups { get; set; }
+        public DbSet<DictionaryItem> DictionaryItems { get; set; }
 
         public XovoeJDbContext(DbContextOptions options) : base(options)
         {
@@ -83,6 +85,23 @@ namespace XovoeJ.Persistence.PostgreSql
             {
                 build.HasIndex(o => o.OrderId);
                 build.HasIndex(o => o.ProductId);
+            });
+
+            // DictionaryGroup 配置
+            modelBuilder.Entity<DictionaryGroup>(build =>
+            {
+                build.HasIndex(g => g.Code).IsUnique();
+                build.HasIndex(g => g.ParentId);
+                build.HasIndex(g => g.Path);
+                build.HasIndex(g => g.Type);
+            });
+
+            // DictionaryItem 配置
+            modelBuilder.Entity<DictionaryItem>(build =>
+            {
+                build.HasIndex(i => i.GroupId);
+                build.HasIndex(i => i.Key).IsUnique();
+                build.HasIndex(i => i.IsEnabled);
             });
         }
     }

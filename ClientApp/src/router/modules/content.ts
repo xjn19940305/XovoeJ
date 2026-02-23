@@ -10,7 +10,7 @@ const contentRoute: Route.recordMainRaw = {
     title: '内容管理',
     icon: 'i-heroicons-solid:document-text',
     // 只要有任何一个子权限就能看到菜单
-    auth: ['content:view', 'content:banner:view'],
+    auth: ['content:view', 'content:banner:view', 'content:dict:view'],
   },
   children: [
     {
@@ -33,6 +33,16 @@ const contentRoute: Route.recordMainRaw = {
             title: '轮播图管理',
             icon: 'i-heroicons-solid:photo',
             auth: ['content:banner:view'],
+          },
+        },
+        {
+          path: 'dict',
+          name: 'ContentDict',
+          component: () => import('@/views/content/dict/index.vue'),
+          meta: {
+            title: '字典管理',
+            icon: 'i-heroicons-solid:book-open',
+            auth: ['content:dict:view'],
           },
         },
       ],
