@@ -56,11 +56,34 @@ namespace XovoeJ.Abstractions.Services
         Task<bool> ConfirmReceiptAsync(string userId, string orderId);
 
         /// <summary>
-        /// 删除订单
+        /// 删除订单（软删除）
         /// </summary>
         /// <param name="userId">用户ID</param>
         /// <param name="orderId">订单ID</param>
         /// <returns></returns>
         Task<bool> DeleteOrderAsync(string userId, string orderId);
+
+        /// <summary>
+        /// 支付订单（支付回调）
+        /// </summary>
+        /// <param name="orderId">订单ID</param>
+        /// <param name="paymentMethod">支付方式</param>
+        /// <returns></returns>
+        Task<bool> PayOrderAsync(string orderId, string paymentMethod);
+
+        /// <summary>
+        /// 发货（管理端）
+        /// </summary>
+        /// <param name="orderId">订单ID</param>
+        /// <returns></returns>
+        Task<bool> ShipOrderAsync(string orderId);
+
+        /// <summary>
+        /// 完成订单
+        /// </summary>
+        /// <param name="userId">用户ID</param>
+        /// <param name="orderId">订单ID</param>
+        /// <returns></returns>
+        Task<bool> CompleteOrderAsync(string userId, string orderId);
     }
 }

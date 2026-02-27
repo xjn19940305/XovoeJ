@@ -330,12 +330,7 @@ namespace XovoeJ.Workflow.Services
                 .Take(pageSize)
                 .ToListAsync();
 
-            var items = new List<WorkflowInstanceDto>();
-            foreach (var instance in instances)
-            {
-                var dto = await GetInstanceAsync(instance.Id);
-                if (dto != null) items.Add(dto);
-            }
+            var items = await BatchMapToInstanceDtosAsync(instances);
 
             return (items, total);
         }
@@ -373,12 +368,7 @@ namespace XovoeJ.Workflow.Services
                 .Take(query.PageSize)
                 .ToListAsync();
 
-            var items = new List<WorkflowInstanceDto>();
-            foreach (var instance in instances)
-            {
-                var dto = await GetInstanceAsync(instance.Id);
-                if (dto != null) items.Add(dto);
-            }
+            var items = await BatchMapToInstanceDtosAsync(instances);
 
             // 状态统计
             var statusCount = await instancesQuery
@@ -575,6 +565,82 @@ namespace XovoeJ.Workflow.Services
         #region 私有方法
 
         /// <summary>
+        /// 批量将实例实体转换为 DTO（避免 N+1 查询）
+        /// </summary>
+        private async Task<List<WorkflowInstanceDto>> BatchMapToInstanceDtosAsync(List<XovoeJ.Entities.WorkflowInstance> instances)
+        {
+            if (instances.Count == 0) return new List<WorkflowInstanceDto>();
+
+            var instanceIds = instances.Select(i => i.Id).ToList();
+
+            // 一次性加载所有审批记录
+            var allApprovalRecords = await _dbContext.WorkflowApprovalRecords
+                .Where(r => instanceIds.Contains(r.InstanceId))
+                .OrderBy(r => r.ActionTime)
+                .ToListAsync();
+
+            // 一次性加载所有待办数量
+            var pendingCounts = await _dbContext.WorkflowPendingItems
+                .Where(p => instanceIds.Contains(p.InstanceId))
+                .GroupBy(p => p.InstanceId)
+                .Select(g => new { InstanceId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.InstanceId, x => x.Count);
+
+            var recordsByInstance = allApprovalRecords
+                .GroupBy(r => r.InstanceId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            return instances.Select(instance =>
+            {
+                var records = recordsByInstance.GetValueOrDefault(instance.Id, new List<XovoeJ.Entities.WorkflowApprovalRecord>());
+                var completedSteps = records
+                    .GroupBy(r => r.StepId)
+                    .Select(g => new CompletedStepDto
+                    {
+                        StepId = g.Key,
+                        StepName = g.First().StepName,
+                        Approvals = g.Select(r => new ApprovalRecordDto
+                        {
+                            Id = r.Id,
+                            StepId = r.StepId,
+                            StepName = r.StepName,
+                            ApproverId = r.ApproverId,
+                            ApproverName = r.ApproverName,
+                            Action = r.Action,
+                            Comment = r.Comment,
+                            Attachments = string.IsNullOrEmpty(r.Attachments) ? null : JsonSerializer.Deserialize<List<string>>(r.Attachments),
+                            ActionTime = r.ActionTime
+                        }).ToList(),
+                        CompletedAt = g.Max(r => r.ActionTime)
+                    }).ToList();
+
+                pendingCounts.TryGetValue(instance.Id, out var pendingCount);
+
+                return new WorkflowInstanceDto
+                {
+                    Id = instance.Id,
+                    WorkflowCode = instance.WorkflowCode,
+                    WorkflowName = instance.WorkflowName,
+                    InitiatorId = instance.InitiatorId,
+                    InitiatorName = instance.InitiatorName,
+                    Title = instance.Title,
+                    BusinessKey = instance.BusinessKey,
+                    BusinessType = instance.BusinessType,
+                    CurrentStepId = instance.CurrentStepId,
+                    CurrentStepName = instance.CurrentStepName,
+                    Status = instance.Status,
+                    FormData = string.IsNullOrEmpty(instance.FormData) ? null : JsonSerializer.Deserialize<object>(instance.FormData),
+                    Variables = instance.Variables,
+                    PendingCount = pendingCount,
+                    CompletedSteps = completedSteps,
+                    CreatedAt = instance.CreatedAt,
+                    UpdatedAt = instance.UpdatedAt,
+                    CompletedAt = instance.CompletedAt
+                };
+            }).ToList();
+        }
+
+        /// <summary>
         /// 处理审批通过
         /// </summary>
         private async Task HandleApproveAsync(
@@ -583,20 +649,27 @@ namespace XovoeJ.Workflow.Services
             List<WorkflowStepDefinition> steps,
             string userId)
         {
-            // 获取当前步骤的所有待办
-            var pendingItems = await _dbContext.WorkflowPendingItems
-                .Where(p => p.InstanceId == instance.Id && p.StepId == currentStep.Id)
-                .ToListAsync();
+            // 只删除当前审批人的待办（而非所有人的待办）
+            var currentUserPendingItem = await _dbContext.WorkflowPendingItems
+                .FirstOrDefaultAsync(p => p.InstanceId == instance.Id && p.StepId == currentStep.Id && p.ApproverId == userId);
 
-            // 删除当前步骤的待办
-            _dbContext.WorkflowPendingItems.RemoveRange(pendingItems);
+            if (currentUserPendingItem != null)
+            {
+                _dbContext.WorkflowPendingItems.Remove(currentUserPendingItem);
+            }
 
-            // 检查审批规则
+            // 检查审批规则（注意：当前审批人的记录已在调用方添加到 ApprovalRecords）
             var allApprovals = await _dbContext.WorkflowApprovalRecords
                 .Where(r => r.InstanceId == instance.Id && r.StepId == currentStep.Id && r.Action == ApprovalAction.Approve)
                 .Select(r => r.ApproverId)
                 .Distinct()
                 .ToListAsync();
+
+            // 加上当前审批人（尚未 SaveChanges，所以手动计入）
+            if (!allApprovals.Contains(userId))
+            {
+                allApprovals.Add(userId);
+            }
 
             bool stepCompleted = currentStep.ApprovalRule switch
             {
@@ -611,6 +684,12 @@ namespace XovoeJ.Workflow.Services
                 // 未完成，继续等待其他审批人
                 return;
             }
+
+            // 步骤完成，删除该步骤剩余的所有待办
+            var remainingPendingItems = await _dbContext.WorkflowPendingItems
+                .Where(p => p.InstanceId == instance.Id && p.StepId == currentStep.Id)
+                .ToListAsync();
+            _dbContext.WorkflowPendingItems.RemoveRange(remainingPendingItems);
 
             // 查找下一步骤
             var nextStep = steps

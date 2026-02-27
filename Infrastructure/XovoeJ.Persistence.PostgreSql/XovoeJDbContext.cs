@@ -27,7 +27,7 @@ namespace XovoeJ.Persistence.PostgreSql
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll);
+            optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -82,6 +82,8 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(o => o.OrderNo).IsUnique();
                 build.HasIndex(o => o.Status);
                 build.HasIndex(o => o.CreatedAt);
+                build.HasIndex(o => o.IsDeleted);
+                build.HasQueryFilter(o => !o.IsDeleted);
             });
 
             // OrderItem 配置
@@ -104,7 +106,7 @@ namespace XovoeJ.Persistence.PostgreSql
             modelBuilder.Entity<DictionaryItem>(build =>
             {
                 build.HasIndex(i => i.GroupId);
-                build.HasIndex(i => i.Key).IsUnique();
+                build.HasIndex(i => new { i.GroupId, i.Key }).IsUnique();
                 build.HasIndex(i => i.IsEnabled);
             });
 

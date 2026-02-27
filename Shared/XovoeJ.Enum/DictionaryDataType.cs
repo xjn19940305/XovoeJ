@@ -41,6 +41,6 @@ namespace XovoeJ.Enum
         /// 富文本/HTML
         /// </summary>
         [Description("富文本")]
-        Html = 4
+        Html = 5
     }
 }

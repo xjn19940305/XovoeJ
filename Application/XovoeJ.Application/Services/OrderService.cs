@@ -5,6 +5,8 @@ using XovoeJ.Abstractions.Services;
 using XovoeJ.Contracts.Order;
 using XovoeJ.Entities;
 using XovoeJ.Enum;
+using XovoeJ.EventBus.Abstractions;
+using XovoeJ.EventBus.Events;
 using XovoeJ.Persistence.PostgreSql;
 
 namespace XovoeJ.Application.Services
@@ -16,13 +18,16 @@ namespace XovoeJ.Application.Services
     {
         private readonly XovoeJDbContext _dbContext;
         private readonly ILogger<OrderService> _logger;
+        private readonly IEventBus _eventBus;
 
         public OrderService(
             XovoeJDbContext dbContext,
-            ILogger<OrderService> logger)
+            ILogger<OrderService> logger,
+            IEventBus eventBus)
         {
             _dbContext = dbContext;
             _logger = logger;
+            _eventBus = eventBus;
         }
 
         /// <summary>
@@ -30,143 +35,181 @@ namespace XovoeJ.Application.Services
         /// </summary>
         public async Task<OrderDto> SubmitOrderAsync(string userId, SubmitOrderRequestDto request)
         {
-            // 获取商品信息
-            var orderItems = new List<OrderItem>();
+            // 使用事务包裹整个订单提交流程，防止部分成功导致数据不一致
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-            if (request.CartItemIds != null && request.CartItemIds.Any())
+            try
             {
-                // 从购物车下单
-                var cartItems = await _dbContext.ShoppingCarts
-                    .Include(c => c.Product)
-                        .ThenInclude(p => p.Skus)
-                    .Where(c => c.UserId == userId && request.CartItemIds.Contains(c.Id))
-                    .ToListAsync();
+                // 获取商品信息
+                var orderItems = new List<OrderItem>();
 
-                foreach (var cartItem in cartItems)
+                if (request.CartItemIds != null && request.CartItemIds.Any())
                 {
-                    var sku = cartItem.Product?.Skus.FirstOrDefault(s => s.Id == cartItem.SkuId);
-                    if (cartItem.Product == null || sku == null)
+                    // 从购物车下单
+                    var cartItems = await _dbContext.ShoppingCarts
+                        .Include(c => c.Product)
+                            .ThenInclude(p => p.Skus)
+                        .Where(c => c.UserId == userId && request.CartItemIds.Contains(c.Id))
+                        .ToListAsync();
+
+                    foreach (var cartItem in cartItems)
                     {
-                        throw new ArgumentException($"商品 {cartItem.Product?.Name} 不存在或已下架");
+                        var sku = cartItem.Product?.Skus.FirstOrDefault(s => s.Id == cartItem.SkuId);
+                        if (cartItem.Product == null || sku == null)
+                        {
+                            throw new ArgumentException($"商品 {cartItem.Product?.Name} 不存在或已下架");
+                        }
+
+                        // 同时检查商品和SKU的上架状态
+                        if (!cartItem.Product.IsEnabled)
+                        {
+                            throw new ArgumentException($"商品 {cartItem.Product.Name} 已下架");
+                        }
+
+                        if (!sku.IsEnabled || sku.Stock < cartItem.Quantity)
+                        {
+                            throw new ArgumentException($"商品 {cartItem.Product.Name} 库存不足");
+                        }
+
+                        orderItems.Add(new OrderItem
+                        {
+                            ProductId = cartItem.ProductId,
+                            ProductName = cartItem.Product.Name,
+                            ProductImage = cartItem.Product.MainImage,
+                            SkuId = cartItem.SkuId,
+                            SkuSpecs = sku.Specs,
+                            Price = sku.Price,
+                            Quantity = cartItem.Quantity,
+                            Subtotal = sku.Price * cartItem.Quantity
+                        });
                     }
 
-                    if (!sku.IsEnabled || sku.Stock < cartItem.Quantity)
-                    {
-                        throw new ArgumentException($"商品 {cartItem.Product.Name} 库存不足");
-                    }
+                    // 清除购物车中已下单的商品
+                    _dbContext.ShoppingCarts.RemoveRange(cartItems);
+                }
+                else if (request.DirectItems != null && request.DirectItems.Any())
+                {
+                    // 直接购买
+                    var productIds = request.DirectItems.Select(i => i.ProductId).Distinct().ToList();
+                    var products = await _dbContext.Products
+                        .Include(p => p.Skus)
+                        .Where(p => productIds.Contains(p.Id))
+                        .ToListAsync();
 
-                    orderItems.Add(new OrderItem
+                    foreach (var item in request.DirectItems)
                     {
-                        ProductId = cartItem.ProductId,
-                        ProductName = cartItem.Product.Name,
-                        ProductImage = cartItem.Product.MainImage,
-                        SkuId = cartItem.SkuId,
-                        SkuSpecs = sku.Specs,
-                        Price = sku.Price,
-                        Quantity = cartItem.Quantity,
-                        Subtotal = sku.Price * cartItem.Quantity
-                    });
+                        var product = products.FirstOrDefault(p => p.Id == item.ProductId);
+                        if (product == null)
+                        {
+                            throw new ArgumentException($"商品不存在");
+                        }
+
+                        // 检查商品上架状态
+                        if (!product.IsEnabled)
+                        {
+                            throw new ArgumentException($"商品 {product.Name} 已下架");
+                        }
+
+                        var sku = product.Skus.FirstOrDefault(s => s.Id == item.SkuId);
+                        if (sku == null || !sku.IsEnabled)
+                        {
+                            throw new ArgumentException($"商品 {product.Name} 规格不存在或已下架");
+                        }
+
+                        if (sku.Stock < item.Quantity)
+                        {
+                            throw new ArgumentException($"商品 {product.Name} 库存不足");
+                        }
+
+                        orderItems.Add(new OrderItem
+                        {
+                            ProductId = item.ProductId,
+                            ProductName = product.Name,
+                            ProductImage = product.MainImage,
+                            SkuId = item.SkuId,
+                            SkuSpecs = sku.Specs,
+                            Price = sku.Price,
+                            Quantity = item.Quantity,
+                            Subtotal = sku.Price * item.Quantity
+                        });
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException("请选择要购买的商品");
                 }
 
-                // 清除购物车中已下单的商品
-                _dbContext.ShoppingCarts.RemoveRange(cartItems);
-            }
-            else if (request.DirectItems != null && request.DirectItems.Any())
-            {
-                // 直接购买
-                var productIds = request.DirectItems.Select(i => i.ProductId).Distinct().ToList();
-                var products = await _dbContext.Products
-                    .Include(p => p.Skus)
-                    .Where(p => productIds.Contains(p.Id))
-                    .ToListAsync();
+                // 计算金额
+                var totalAmount = orderItems.Sum(i => i.Subtotal);
+                var discountAmount = 0m;
+                var freightAmount = 0m; // TODO: 计算运费
+                var payAmount = totalAmount - discountAmount + freightAmount;
 
-                foreach (var item in request.DirectItems)
+                // 生成订单号
+                var orderNo = GenerateOrderNo();
+
+                // 创建订单
+                var order = new Order
                 {
-                    var product = products.FirstOrDefault(p => p.Id == item.ProductId);
-                    if (product == null)
-                    {
-                        throw new ArgumentException($"商品不存在");
-                    }
+                    OrderNo = orderNo,
+                    UserId = userId,
+                    TotalAmount = totalAmount,
+                    DiscountAmount = discountAmount,
+                    FreightAmount = freightAmount,
+                    PayAmount = payAmount,
+                    Status = OrderStatus.Pending,
+                    PayStatus = 0,
+                    ShipStatus = 0,
+                    ConsigneeName = request.ConsigneeName,
+                    ConsigneeMobile = request.ConsigneeMobile,
+                    ConsigneeAddress = request.ConsigneeAddress,
+                    Remark = request.Remark
+                };
 
-                    var sku = product.Skus.FirstOrDefault(s => s.Id == item.SkuId);
-                    if (sku == null || !sku.IsEnabled)
-                    {
-                        throw new ArgumentException($"商品 {product.Name} 规格不存在或已下架");
-                    }
+                _dbContext.Orders.Add(order);
+                await _dbContext.SaveChangesAsync();
 
-                    if (sku.Stock < item.Quantity)
-                    {
-                        throw new ArgumentException($"商品 {product.Name} 库存不足");
-                    }
-
-                    orderItems.Add(new OrderItem
-                    {
-                        ProductId = item.ProductId,
-                        ProductName = product.Name,
-                        ProductImage = product.MainImage,
-                        SkuId = item.SkuId,
-                        SkuSpecs = sku.Specs,
-                        Price = sku.Price,
-                        Quantity = item.Quantity,
-                        Subtotal = sku.Price * item.Quantity
-                    });
+                // 添加订单项
+                foreach (var item in orderItems)
+                {
+                    item.OrderId = order.Id;
+                    _dbContext.OrderItems.Add(item);
                 }
+
+                // 原子扣减库存：使用 ExecuteUpdateAsync 的 WHERE 条件防止超卖
+                foreach (var item in orderItems)
+                {
+                    var rowsAffected = await _dbContext.ProductSkus
+                        .Where(s => s.Id == item.SkuId && s.Stock >= item.Quantity)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(p => p.Stock, p => p.Stock - item.Quantity)
+                            .SetProperty(p => p.SalesCount, p => p.SalesCount + item.Quantity));
+
+                    if (rowsAffected == 0)
+                    {
+                        throw new ArgumentException($"商品 {item.ProductName} 库存不足，请重新下单");
+                    }
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // 发布订单创建事件
+                await _eventBus.PublishAsync(new OrderCreatedEvent
+                {
+                    OrderId = order.Id,
+                    UserId = userId,
+                    OrderNo = order.OrderNo,
+                    TotalAmount = order.TotalAmount
+                });
+
+                return await GetOrderByIdAsync(userId, order.Id);
             }
-            else
+            catch
             {
-                throw new ArgumentException("请选择要购买的商品");
+                await transaction.RollbackAsync();
+                throw;
             }
-
-            // 计算金额
-            var totalAmount = orderItems.Sum(i => i.Subtotal);
-            var discountAmount = 0m;
-            var freightAmount = 0m; // TODO: 计算运费
-            var payAmount = totalAmount - discountAmount + freightAmount;
-
-            // 生成订单号
-            var orderNo = GenerateOrderNo();
-
-            // 创建订单
-            var order = new Order
-            {
-                OrderNo = orderNo,
-                UserId = userId,
-                TotalAmount = totalAmount,
-                DiscountAmount = discountAmount,
-                FreightAmount = freightAmount,
-                PayAmount = payAmount,
-                Status = OrderStatus.Pending,
-                PayStatus = 0,
-                ShipStatus = 0,
-                ConsigneeName = request.ConsigneeName,
-                ConsigneeMobile = request.ConsigneeMobile,
-                ConsigneeAddress = request.ConsigneeAddress,
-                Remark = request.Remark
-            };
-
-            _dbContext.Orders.Add(order);
-            await _dbContext.SaveChangesAsync();
-
-            // 添加订单项
-            foreach (var item in orderItems)
-            {
-                item.OrderId = order.Id;
-                _dbContext.OrderItems.Add(item);
-            }
-
-            await _dbContext.SaveChangesAsync();
-
-            // 扣减库存
-            foreach (var item in orderItems)
-            {
-                var sku = await _dbContext.ProductSkus.FirstAsync(s => s.Id == item.SkuId);
-                sku.Stock -= item.Quantity;
-                sku.SalesCount += item.Quantity;
-            }
-
-            await _dbContext.SaveChangesAsync();
-
-            return await GetOrderByIdAsync(userId, order.Id);
         }
 
         /// <summary>
@@ -244,11 +287,14 @@ namespace XovoeJ.Application.Services
                 throw new ArgumentException("只有待支付订单可以取消");
             }
 
-            // 恢复库存
+            // 恢复库存（原子操作）
             foreach (var item in order.OrderItems)
             {
-                var sku = await _dbContext.ProductSkus.FirstAsync(s => s.Id == item.SkuId);
-                sku.Stock += item.Quantity;
+                await _dbContext.ProductSkus
+                    .Where(s => s.Id == item.SkuId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(p => p.Stock, p => p.Stock + item.Quantity)
+                        .SetProperty(p => p.SalesCount, p => p.SalesCount - item.Quantity));
             }
 
             order.Status = OrderStatus.Cancelled;
@@ -256,6 +302,16 @@ namespace XovoeJ.Application.Services
             order.UpdatedAt = DateTime.UtcNow;
 
             await _dbContext.SaveChangesAsync();
+
+            // 发布订单取消事件
+            await _eventBus.PublishAsync(new OrderCancelledEvent
+            {
+                OrderId = order.Id,
+                OrderNo = order.OrderNo,
+                Reason = "用户主动取消",
+                CancelledTime = DateTime.UtcNow
+            });
+
             return true;
         }
 
@@ -286,12 +342,11 @@ namespace XovoeJ.Application.Services
         }
 
         /// <summary>
-        /// 删除订单
+        /// 删除订单（软删除）
         /// </summary>
         public async Task<bool> DeleteOrderAsync(string userId, string orderId)
         {
             var order = await _dbContext.Orders
-                .Include(o => o.OrderItems)
                 .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
 
             if (order == null)
@@ -305,8 +360,101 @@ namespace XovoeJ.Application.Services
                 throw new ArgumentException("只能删除已完成或已取消的订单");
             }
 
-            _dbContext.OrderItems.RemoveRange(order.OrderItems);
-            _dbContext.Orders.Remove(order);
+            order.IsDeleted = true;
+            order.DeletedAt = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// 支付订单（支付回调）
+        /// </summary>
+        public async Task<bool> PayOrderAsync(string orderId, string paymentMethod)
+        {
+            var order = await _dbContext.Orders
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                return false;
+            }
+
+            if (order.Status != OrderStatus.Pending)
+            {
+                throw new ArgumentException("只有待支付订单可以支付");
+            }
+
+            order.Status = OrderStatus.Paid;
+            order.PayStatus = 1;
+            order.PayTime = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+
+            // 发布订单支付事件
+            await _eventBus.PublishAsync(new OrderPaidEvent
+            {
+                OrderId = order.Id,
+                OrderNo = order.OrderNo,
+                PaidAmount = order.PayAmount,
+                PaymentMethod = paymentMethod,
+                PaymentTime = DateTime.UtcNow
+            });
+
+            return true;
+        }
+
+        /// <summary>
+        /// 发货（管理端）
+        /// </summary>
+        public async Task<bool> ShipOrderAsync(string orderId)
+        {
+            var order = await _dbContext.Orders
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                return false;
+            }
+
+            if (order.Status != OrderStatus.Paid)
+            {
+                throw new ArgumentException("只有已支付订单可以发货");
+            }
+
+            order.Status = OrderStatus.Shipped;
+            order.ShipStatus = 1;
+            order.ShipTime = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// 完成订单
+        /// </summary>
+        public async Task<bool> CompleteOrderAsync(string userId, string orderId)
+        {
+            var order = await _dbContext.Orders
+                .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+
+            if (order == null)
+            {
+                return false;
+            }
+
+            if (order.Status != OrderStatus.Received)
+            {
+                throw new ArgumentException("只有已收货订单可以完成");
+            }
+
+            order.Status = OrderStatus.Completed;
+            order.FinishTime = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+
             await _dbContext.SaveChangesAsync();
             return true;
         }
@@ -314,11 +462,11 @@ namespace XovoeJ.Application.Services
         #region 私有方法
 
         /// <summary>
-        /// 生成订单号
+        /// 生成订单号（毫秒精度 + Guid后缀，避免碰撞）
         /// </summary>
         private static string GenerateOrderNo()
         {
-            return $"ORD{DateTime.UtcNow:yyyyMMddHHmmss}{new Random().Next(1000, 9999)}";
+            return $"ORD{DateTime.UtcNow:yyyyMMddHHmmssfff}{Guid.NewGuid().ToString("N")[..8]}";
         }
 
         /// <summary>

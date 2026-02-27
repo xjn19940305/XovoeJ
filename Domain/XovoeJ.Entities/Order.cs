@@ -106,6 +106,18 @@ namespace XovoeJ.Entities
         public DateTime? CancelTime { get; set; }
 
         /// <summary>
+        /// 是否已删除（软删除）
+        /// </summary>
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; }
+
+        /// <summary>
+        /// 删除时间
+        /// </summary>
+        [Column("deleted_at")]
+        public DateTime? DeletedAt { get; set; }
+
+        /// <summary>
         /// 收货人姓名
         /// </summary>
         [MaxLength(64)]
