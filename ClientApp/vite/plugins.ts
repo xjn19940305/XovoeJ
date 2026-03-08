@@ -16,7 +16,6 @@ import Archiver from 'vite-plugin-archiver'
 import banner from 'vite-plugin-banner'
 import { compression } from 'vite-plugin-compression2'
 import { envParse, parseLoadedEnv } from 'vite-plugin-env-parse'
-import { vitePluginFakeServer } from 'vite-plugin-fake-server'
 import Pages from 'vite-plugin-pages'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import VueDevTools from 'vite-plugin-vue-devtools'
@@ -75,14 +74,6 @@ export default function createVitePlugins(mode: string, isBuild = false) {
       iconDirs: [path.resolve(process.cwd(), 'src/assets/icons/')],
       symbolId: 'icon-[dir]-[name]',
       svgoOptions: isBuild,
-    }),
-
-    // https://github.com/condorheroblog/vite-plugin-fake-server
-    vitePluginFakeServer({
-      logger: !isBuild,
-      include: 'src/mock',
-      infixName: false,
-      enableProd: isBuild && viteEnv.VITE_BUILD_MOCK,
     }),
 
     // https://github.com/dishait/vite-plugin-vue-meta-layouts

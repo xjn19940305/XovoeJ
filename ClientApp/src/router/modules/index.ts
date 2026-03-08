@@ -1,12 +1,18 @@
 import type { Route } from '#/global'
-import system from './system'
-import shop from './shop'
 import content from './content'
+import growth from './growth'
+import marketing from './marketing'
+import message from './message'
+import shop from './shop'
+import system from './system'
 
 // 合并所有模块路由
 const xovoejRoutes: Route.recordMainRaw[] = [
-  shop,
   content,
+  growth,
+  marketing,
+  message,
+  shop,
   system,
 
   // 未来可以在这里添加更多模块

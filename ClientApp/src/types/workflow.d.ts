@@ -123,6 +123,13 @@ declare namespace Api {
       completedAt?: string
     }
 
+    interface PendingTasksResponse {
+      data: WorkflowInstance[]
+      total: number
+      page: number
+      pageSize: number
+    }
+
     // 已完成步骤
     interface CompletedStep {
       stepId: string

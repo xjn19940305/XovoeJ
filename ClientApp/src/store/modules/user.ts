@@ -17,8 +17,14 @@ export const useUserStore = defineStore(
     const userId = ref(localStorage.userId ?? '')
     const userName = ref(localStorage.userName ?? '')
     const nickName = ref(localStorage.nickName ?? '')
-    const permissions = ref<string[]>(JSON.parse(localStorage.permissions ?? '[]'))
+    const permissions = ref<string[]>([])
     const roles = ref<string[]>(JSON.parse(localStorage.roles ?? '[]'))
+
+    function updatePermissions(nextPermissions: string[]) {
+      const next = nextPermissions || []
+      localStorage.setItem('permissions', JSON.stringify(next))
+      permissions.value = next
+    }
 
     const isLogin = computed(() => {
       return !!token.value
@@ -41,7 +47,7 @@ export const useUserStore = defineStore(
       localStorage.setItem('userName', loginData.user.userName ?? '')
       localStorage.setItem('nickName', loginData.user.nickName ?? '')
       localStorage.setItem('roles', JSON.stringify(loginData.user.roles || []))
-      localStorage.setItem('permissions', JSON.stringify(loginData.user.permissions || []))
+      updatePermissions(loginData.user.permissions || [])
 
       account.value = loginData.user.userName ?? data.account
       token.value = loginData.accessToken
@@ -51,7 +57,6 @@ export const useUserStore = defineStore(
       userName.value = loginData.user.userName ?? ''
       nickName.value = loginData.user.nickName ?? ''
       roles.value = loginData.user.roles || []
-      permissions.value = loginData.user.permissions || []
     }
 
     // 获取用户信息
@@ -65,14 +70,13 @@ export const useUserStore = defineStore(
       localStorage.setItem('userName', userInfo.userName ?? '')
       localStorage.setItem('nickName', userInfo.nickName ?? '')
       localStorage.setItem('roles', JSON.stringify(userInfo.roles || []))
-      localStorage.setItem('permissions', JSON.stringify(userInfo.permissions || []))
+      updatePermissions(userInfo.permissions || [])
 
       avatar.value = userInfo.picture ?? ''
       userId.value = userInfo.id
       userName.value = userInfo.userName ?? ''
       nickName.value = userInfo.nickName ?? ''
       roles.value = userInfo.roles || []
-      permissions.value = userInfo.permissions || []
 
       return userInfo
     }
@@ -155,8 +159,7 @@ export const useUserStore = defineStore(
 
     // 获取权限（兼容旧接口）
     async function getPermissions() {
-      const userInfo = await getUserInfo()
-      permissions.value = userInfo.permissions || []
+      await getUserInfo()
       return permissions.value
     }
 

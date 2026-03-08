@@ -31,6 +31,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="type">字典类型（0=系统配置, 1=业务字典）</param>
         /// <returns>分组列表</returns>
+        [HttpGet("api/admin/dictionary/groups")]
         [HttpGet("api/dictionary/groups")]
         public async Task<IActionResult> GetGroups([FromQuery] DictionaryType? type)
         {
@@ -51,6 +52,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="type">字典类型（0=系统配置, 1=业务字典）</param>
         /// <returns>分组树</returns>
+        [HttpGet("api/admin/dictionary/groups/tree")]
         [HttpGet("api/dictionary/groups/tree")]
         public async Task<IActionResult> GetGroupTree([FromQuery] DictionaryType? type)
         {
@@ -71,6 +73,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="code">分组编码</param>
         /// <returns>分组信息</returns>
+        [HttpGet("api/admin/dictionary/groups/by-code/{code}")]
         [HttpGet("api/dictionary/groups/by-code/{code}")]
         public async Task<IActionResult> GetGroupByCode(string code)
         {
@@ -95,6 +98,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="groupId">分组ID</param>
         /// <returns>分组信息</returns>
+        [HttpGet("api/admin/dictionary/groups/{groupId}")]
         [HttpGet("api/dictionary/groups/{groupId}")]
         public async Task<IActionResult> GetGroupById(string groupId)
         {
@@ -119,6 +123,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="request">创建请求</param>
         /// <returns>创建的分组信息</returns>
+        [HttpPost("api/admin/dictionary/groups")]
         [HttpPost("api/dictionary/groups")]
         [Authorize]
         public async Task<IActionResult> CreateGroup([FromBody] CreateDictionaryGroupRequestDto request)
@@ -145,6 +150,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="groupId">分组ID</param>
         /// <param name="request">更新请求</param>
         /// <returns>更新后的分组信息</returns>
+        [HttpPut("api/admin/dictionary/groups/{groupId}")]
         [HttpPut("api/dictionary/groups/{groupId}")]
         [Authorize]
         public async Task<IActionResult> UpdateGroup(string groupId, [FromBody] UpdateDictionaryGroupRequestDto request)
@@ -174,6 +180,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="groupId">分组ID</param>
         /// <returns></returns>
+        [HttpDelete("api/admin/dictionary/groups/{groupId}")]
         [HttpDelete("api/dictionary/groups/{groupId}")]
         [Authorize]
         public async Task<IActionResult> DeleteGroup(string groupId)
@@ -208,6 +215,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="groupId">分组ID</param>
         /// <param name="enabledOnly">是否只获取启用的项</param>
         /// <returns>字典项列表</returns>
+        [HttpGet("api/admin/dictionary/items")]
         [HttpGet("api/dictionary/items")]
         public async Task<IActionResult> GetItems([FromQuery] string? groupId = null, [FromQuery] bool enabledOnly = false)
         {
@@ -229,6 +237,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="groupCode">分组编码</param>
         /// <param name="enabledOnly">是否只获取启用的项</param>
         /// <returns>字典项列表</returns>
+        [HttpGet("api/admin/dictionary/items/by-group/{groupCode}")]
         [HttpGet("api/dictionary/items/by-group/{groupCode}")]
         public async Task<IActionResult> GetItemsByGroupCode(string groupCode, [FromQuery] bool enabledOnly = false)
         {
@@ -249,6 +258,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="key">字典键</param>
         /// <returns>字典项信息</returns>
+        [HttpGet("api/admin/dictionary/items/by-key/{key}")]
         [HttpGet("api/dictionary/items/by-key/{key}")]
         public async Task<IActionResult> GetItemByKey(string key)
         {
@@ -273,6 +283,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="keys">字典键集合（逗号分隔）</param>
         /// <returns>字典项字典</returns>
+        [HttpGet("api/admin/dictionary/items/batch")]
         [HttpGet("api/dictionary/items/batch")]
         public async Task<IActionResult> GetItemsByKeys([FromQuery] string keys)
         {
@@ -295,6 +306,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="key">配置键</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>配置值</returns>
+        [HttpGet("api/admin/dictionary/value/string/{key}")]
         [HttpGet("api/dictionary/value/string/{key}")]
         public async Task<IActionResult> GetStringValue(string key, [FromQuery] string? defaultValue = null)
         {
@@ -316,6 +328,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="key">配置键</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>配置值</returns>
+        [HttpGet("api/admin/dictionary/value/int/{key}")]
         [HttpGet("api/dictionary/value/int/{key}")]
         public async Task<IActionResult> GetIntValue(string key, [FromQuery] int defaultValue = 0)
         {
@@ -337,6 +350,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="key">配置键</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>配置值</returns>
+        [HttpGet("api/admin/dictionary/value/bool/{key}")]
         [HttpGet("api/dictionary/value/bool/{key}")]
         public async Task<IActionResult> GetBoolValue(string key, [FromQuery] bool defaultValue = false)
         {
@@ -357,6 +371,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="request">创建请求</param>
         /// <returns>创建的字典项信息</returns>
+        [HttpPost("api/admin/dictionary/items")]
         [HttpPost("api/dictionary/items")]
         [Authorize]
         public async Task<IActionResult> CreateItem([FromBody] CreateDictionaryItemRequestDto request)
@@ -382,6 +397,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="request">批量创建请求</param>
         /// <returns>创建的字典项信息列表</returns>
+        [HttpPost("api/admin/dictionary/items/batch")]
         [HttpPost("api/dictionary/items/batch")]
         [Authorize]
         public async Task<IActionResult> CreateItems([FromBody] BatchCreateDictionaryItemRequestDto request)
@@ -408,6 +424,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="itemId">字典项ID</param>
         /// <param name="request">更新请求</param>
         /// <returns>更新后的字典项信息</returns>
+        [HttpPut("api/admin/dictionary/items/{itemId}")]
         [HttpPut("api/dictionary/items/{itemId}")]
         [Authorize]
         public async Task<IActionResult> UpdateItem(string itemId, [FromBody] UpdateDictionaryItemRequestDto request)
@@ -437,6 +454,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="itemId">字典项ID</param>
         /// <returns></returns>
+        [HttpDelete("api/admin/dictionary/items/{itemId}")]
         [HttpDelete("api/dictionary/items/{itemId}")]
         [Authorize]
         public async Task<IActionResult> DeleteItem(string itemId)

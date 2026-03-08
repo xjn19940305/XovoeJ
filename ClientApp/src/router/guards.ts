@@ -1,6 +1,6 @@
 import type { Router, RouteRecordRaw } from 'vue-router'
 import { useNProgress } from '@vueuse/integrations/useNProgress'
-import { asyncRoutes, asyncRoutesByFilesystem } from './routes'
+import { asyncRoutes } from './routes'
 import '@/assets/styles/nprogress.css'
 
 function setupRoutes(router: Router) {
@@ -46,27 +46,7 @@ function setupRoutes(router: Router) {
           if (settingsStore.settings.app.enablePermission && userStore.permissions.length === 0) {
             await userStore.getPermissions()
           }
-          // 生成动态路由
-          switch (settingsStore.settings.app.routeBaseOn) {
-            case 'frontend':
-              routeStore.generateRoutesAtFront(asyncRoutes)
-              break
-            case 'backend':
-              await routeStore.generateRoutesAtBack()
-              break
-            case 'filesystem':
-              routeStore.generateRoutesAtFilesystem(asyncRoutesByFilesystem)
-              // 文件系统生成的路由，需要手动生成导航数据
-              switch (settingsStore.settings.menu.baseOn) {
-                case 'frontend':
-                  menuStore.generateMenusAtFront()
-                  break
-                case 'backend':
-                  await menuStore.generateMenusAtBack()
-                  break
-              }
-              break
-          }
+          routeStore.generateRoutesAtFront(asyncRoutes)
           // 注册并记录路由数据
           // 记录的数据会在登出时会使用到，不使用 router.removeRoute 是考虑配置的路由可能不一定有设置 name ，则通过调用 router.addRoute() 返回的回调进行删除
           const removeRoutes: (() => void)[] = []
@@ -75,11 +55,9 @@ function setupRoutes(router: Router) {
               removeRoutes.push(router.addRoute(route as RouteRecordRaw))
             }
           })
-          if (settingsStore.settings.app.routeBaseOn !== 'filesystem') {
-            routeStore.systemRoutes.forEach((route) => {
-              removeRoutes.push(router.addRoute(route as RouteRecordRaw))
-            })
-          }
+          routeStore.systemRoutes.forEach((route) => {
+            removeRoutes.push(router.addRoute(route as RouteRecordRaw))
+          })
           routeStore.setCurrentRemoveRoutes(removeRoutes)
         }
         catch {
@@ -151,12 +129,7 @@ function setupProgress(router: Router) {
 function setupTitle(router: Router) {
   router.afterEach((to) => {
     const settingsStore = useSettingsStore()
-    if (settingsStore.settings.app.routeBaseOn !== 'filesystem') {
-      settingsStore.setTitle(to.matched?.at(-1)?.meta?.title ?? to.meta.title)
-    }
-    else {
-      settingsStore.setTitle(to.meta.title)
-    }
+    settingsStore.setTitle(to.matched?.at(-1)?.meta?.title ?? to.meta.title)
   })
 }
 

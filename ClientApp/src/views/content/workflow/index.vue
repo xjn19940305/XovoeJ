@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
+import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import workflowApi from '@/api/modules/workflow'
-import dayjs from 'dayjs'
 
 defineOptions({
   name: 'ContentWorkflow',
@@ -102,9 +102,9 @@ async function getDefinitionList() {
   loading.value = true
   try {
     const res = await workflowApi.getDefinitions(searchForm.value.type || undefined)
-    tableData.value = res.data.data || []
+    tableData.value = res.data || []
   }
-  catch (error) {
+  catch {
     tableData.value = []
   }
   finally {
@@ -143,7 +143,7 @@ async function handleEdit(row: Api.Workflow.WorkflowDefinition) {
   editingCode.value = row.code
   try {
     const res = await workflowApi.getDefinition(row.code)
-    const data = res.data.data
+    const data = res.data
     formData.value = {
       name: data.name,
       description: data.description,
@@ -242,8 +242,9 @@ function handleDeleteStep(index: number) {
 
 // 上移步骤
 function handleMoveUpStep(index: number) {
-  if (index === 0)
+  if (index === 0) {
     return
+  }
   const temp = formData.value.steps[index]
   formData.value.steps[index] = formData.value.steps[index - 1]
   formData.value.steps[index - 1] = temp
@@ -254,8 +255,9 @@ function handleMoveUpStep(index: number) {
 
 // 下移步骤
 function handleMoveDownStep(index: number) {
-  if (index === formData.value.steps.length - 1)
+  if (index === formData.value.steps.length - 1) {
     return
+  }
   const temp = formData.value.steps[index]
   formData.value.steps[index] = formData.value.steps[index + 1]
   formData.value.steps[index + 1] = temp
@@ -452,7 +454,7 @@ onMounted(() => {
         <!-- 步骤配置 -->
         <el-form-item label="审批步骤">
           <div class="w-full">
-            <div class="flex items-center justify-between mb-2">
+            <div class="mb-2 flex items-center justify-between">
               <span class="text-sm text-gray-500">配置工作流的审批步骤</span>
               <FaButton size="sm" @click="handleAddStep">
                 <template #icon>
@@ -468,18 +470,24 @@ onMounted(() => {
                 :key="step.id"
                 class="step-item"
               >
-                <div class="step-order">{{ index + 1 }}</div>
+                <div class="step-order">
+                  {{ index + 1 }}
+                </div>
                 <div class="step-content">
-                  <div class="step-name">{{ step.name }}</div>
+                  <div class="step-name">
+                    {{ step.name }}
+                  </div>
                   <div class="step-meta">
-                    <el-tag size="small" type="info">{{ getStepTypeLabel(step.type) }}</el-tag>
-                    <span class="text-xs text-gray-500 ml-2">
+                    <el-tag size="small" type="info">
+                      {{ getStepTypeLabel(step.type) }}
+                    </el-tag>
+                    <span class="ml-2 text-xs text-gray-500">
                       {{ getApproverTypeLabel(step.approverType) }}
                     </span>
-                    <span v-if="step.approverIds.length" class="text-xs text-gray-500 ml-2">
+                    <span v-if="step.approverIds.length" class="ml-2 text-xs text-gray-500">
                       ({{ step.approverIds.length }}人)
                     </span>
-                    <span class="text-xs text-gray-500 ml-2">
+                    <span class="ml-2 text-xs text-gray-500">
                       {{ getApprovalRuleLabel(step.approvalRule) }}
                     </span>
                   </div>
@@ -488,10 +496,10 @@ onMounted(() => {
                   <FaButton size="sm" variant="ghost" @click="handleEditStep(index)">
                     <FaIcon name="i-iconoir:edit-pencil" />
                   </FaButton>
-                  <FaButton size="sm" variant="ghost" @click="handleMoveUpStep(index)" :disabled="index === 0">
+                  <FaButton size="sm" variant="ghost" :disabled="index === 0" @click="handleMoveUpStep(index)">
                     <FaIcon name="i-iconoir:nav-arrow-up" />
                   </FaButton>
-                  <FaButton size="sm" variant="ghost" @click="handleMoveDownStep(index)" :disabled="index === formData.steps.length - 1">
+                  <FaButton size="sm" variant="ghost" :disabled="index === formData.steps.length - 1" @click="handleMoveDownStep(index)">
                     <FaIcon name="i-iconoir:nav-arrow-down" />
                   </FaButton>
                   <FaButton size="sm" variant="ghost" class="text-red-500" @click="handleDeleteStep(index)">
@@ -500,15 +508,21 @@ onMounted(() => {
                 </div>
               </div>
               <div v-if="formData.steps.length === 0" class="step-empty">
-                <p class="text-gray-400">暂无审批步骤，请点击"添加步骤"按钮添加</p>
+                <p class="text-gray-400">
+                  暂无审批步骤，请点击"添加步骤"按钮添加
+                </p>
               </div>
             </div>
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
 
@@ -592,8 +606,12 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="stepEditorVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveStep">确定</el-button>
+        <el-button @click="stepEditorVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" @click="handleSaveStep">
+          确定
+        </el-button>
       </template>
     </el-dialog>
   </div>

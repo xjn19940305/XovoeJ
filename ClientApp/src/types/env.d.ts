@@ -1,31 +1,31 @@
 interface ImportMetaEnv {
   // Auto generate by env-parse
   /**
-   * 应用配置面板
+   * App settings panel
    */
   readonly VITE_APP_SETTING: boolean
   /**
-   * 页面标题
+   * Page title
    */
   readonly VITE_APP_TITLE: string
   /**
-   * 接口请求地址，会设置到 axios 的 baseURL 参数上
+   * API base URL, used as axios baseURL
    */
   readonly VITE_APP_API_BASEURL: string
   /**
-   * 调试工具，可设置 eruda 或 vconsole，如果不需要开启则留空
+   * Debug tool: eruda or vconsole
    */
   readonly VITE_APP_DEBUG_TOOL: string
   /**
-   * 是否禁用开发者工具，可防止被调试
+   * Disable devtools
    */
   readonly VITE_APP_DISABLE_DEVTOOL: boolean
   /**
-   * 是否开启代理
+   * Enable proxy in development
    */
   readonly VITE_OPEN_PROXY: boolean
   /**
-   * 是否开启开发者工具
+   * Enable Vue devtools
    */
   readonly VITE_OPEN_DEVTOOLS: boolean
 }

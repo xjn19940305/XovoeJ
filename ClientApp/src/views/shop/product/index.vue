@@ -1,13 +1,19 @@
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import productApi from '@/api/modules/product'
 import categoryApi from '@/api/modules/category'
-import dayjs from 'dayjs'
+import productApi from '@/api/modules/product'
 
 defineOptions({
   name: 'ShopProductList',
 })
+
+interface CategoryTreeOption {
+  value: string
+  label: string
+  children?: CategoryTreeOption[]
+}
 
 const router = useRouter()
 
@@ -36,7 +42,7 @@ const categoryTreeData = ref<Api.Category.CategoryTreeNode[]>([])
 
 // 分类树选项
 const categoryTreeOptions = computed(() => {
-  function buildTree(items: Api.Category.CategoryTreeNode[]) {
+  function buildTree(items: Api.Category.CategoryTreeNode[]): CategoryTreeOption[] {
     return items.map(item => ({
       value: item.id,
       label: item.name,
@@ -186,10 +192,11 @@ function handleSizeChange(size: number) {
 
 // 格式化价格区间
 function formatPriceRange(product: Api.Product.Product) {
-  if (product.minPrice === undefined || product.maxPrice === undefined)
+  if (product.minPrice === undefined || product.maxPrice === undefined) {
     return '-'
-  if (product.minPrice === product.maxPrice)
-    return `¥${product.minPrice.toFixed(2)}`
+  }
+  // eslint-disable-next-line style/max-statements-per-line
+  if (product.minPrice === product.maxPrice) { return `¥${product.minPrice.toFixed(2)}` }
   return `¥${product.minPrice.toFixed(2)} - ¥${product.maxPrice.toFixed(2)}`
 }
 
@@ -243,7 +250,9 @@ onMounted(() => {
                   是
                 </span>
               </el-option>
-              <el-option label="否" :value="false">否</el-option>
+              <el-option label="否" :value="false">
+                否
+              </el-option>
             </el-select>
           </div>
           <div class="search-field">
@@ -255,7 +264,9 @@ onMounted(() => {
                   是
                 </span>
               </el-option>
-              <el-option label="否" :value="false">否</el-option>
+              <el-option label="否" :value="false">
+                否
+              </el-option>
             </el-select>
           </div>
           <div class="search-field">
@@ -267,7 +278,9 @@ onMounted(() => {
                   是
                 </span>
               </el-option>
-              <el-option label="否" :value="false">否</el-option>
+              <el-option label="否" :value="false">
+                否
+              </el-option>
             </el-select>
           </div>
         </div>
@@ -325,10 +338,18 @@ onMounted(() => {
         <el-table-column prop="salesCount" label="销量" width="100" align="right" />
         <el-table-column label="状态" width="180" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.isHot" size="small" type="danger" class="mr-1">热门</el-tag>
-            <el-tag v-if="row.isNew" size="small" type="success" class="mr-1">新品</el-tag>
-            <el-tag v-if="row.isRecommend" size="small" type="warning">推荐</el-tag>
-            <el-tag v-if="!row.isEnabled" size="small" type="info" class="ml-1">已下架</el-tag>
+            <el-tag v-if="row.isHot" size="small" type="danger" class="mr-1">
+              热门
+            </el-tag>
+            <el-tag v-if="row.isNew" size="small" type="success" class="mr-1">
+              新品
+            </el-tag>
+            <el-tag v-if="row.isRecommend" size="small" type="warning">
+              推荐
+            </el-tag>
+            <el-tag v-if="!row.isEnabled" size="small" type="info" class="ml-1">
+              已下架
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="创建时间" width="180">

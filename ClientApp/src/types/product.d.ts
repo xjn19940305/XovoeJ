@@ -23,6 +23,7 @@ declare namespace Api {
       mainImage?: string
       images: string[]
       detail?: string
+      tags?: string[]
       salesCount: number
       browseCount: number
       isEnabled: boolean
@@ -90,6 +91,7 @@ declare namespace Api {
       mainImage?: string
       images?: string[]
       detail?: string
+      tags?: string[]
       isEnabled: boolean
       isHot: boolean
       isNew: boolean

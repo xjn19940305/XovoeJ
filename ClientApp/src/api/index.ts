@@ -14,11 +14,25 @@ declare module 'axios' {
   }
 }
 
+const useProxy = import.meta.env.DEV && import.meta.env.VITE_OPEN_PROXY
+
 const api = axios.create({
-  baseURL: (import.meta.env.DEV && import.meta.env.VITE_OPEN_PROXY) ? '/proxy/' : import.meta.env.VITE_APP_API_BASEURL,
+  baseURL: useProxy ? '/proxy/' : import.meta.env.VITE_APP_API_BASEURL,
   timeout: 1000 * 60,
   responseType: 'json',
 })
+
+export function buildAdminApiPath(path: string) {
+  return `api/admin/${path.replace(/^\/+/, '')}`
+}
+
+export function buildMallApiPath(path: string) {
+  return `api/mall/${path.replace(/^\/+/, '')}`
+}
+
+export function buildIntegrationApiPath(path: string) {
+  return `api/integration/${path.replace(/^\/+/, '')}`
+}
 
 // 添加 Token 到请求
 function addToken(config: any) {

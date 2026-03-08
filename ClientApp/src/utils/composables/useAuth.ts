@@ -1,33 +1,32 @@
+import { hasAnyPermission, hasPermission as hasPermissionCode } from '@/utils/permission'
+
 export default function useAuth() {
+  const settingsStore = useSettingsStore()
+  const userStore = useUserStore()
+
   function hasPermission(permission: string) {
-    const settingsStore = useSettingsStore()
-    const userStore = useUserStore()
-    if (settingsStore.settings.app.enablePermission) {
-      // 如果用户有超级管理员角色，拥有所有权限
-      const userRoles = userStore.roles || []
-      if (userRoles.includes('超级管理员')) {
-        return true
-      }
-      // 检查通配符权限
-      if (userStore.permissions.includes('*')) {
-        return true
-      }
-      return userStore.permissions.includes(permission)
-    }
-    else {
+    if (!settingsStore.settings.app.enablePermission) {
       return true
     }
+
+    const userRoles = userStore.roles || []
+    if (userRoles.includes('超级管理员')) {
+      return true
+    }
+
+    if (userStore.permissions.includes('*')) {
+      return true
+    }
+
+    return hasPermissionCode(userStore.permissions, permission)
   }
 
   function auth(value: string | string[]) {
-    let auth
     if (typeof value === 'string') {
-      auth = value !== '' ? hasPermission(value) : true
+      return value !== '' ? hasPermission(value) : true
     }
-    else {
-      auth = value.length > 0 ? value.some(item => hasPermission(item)) : true
-    }
-    return auth
+
+    return value.length > 0 ? hasAnyPermission(userStore.permissions, value) : true
   }
 
   function authAll(value: string[]) {

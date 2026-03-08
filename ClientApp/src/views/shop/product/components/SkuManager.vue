@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Minus, Plus } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
+import { Minus, Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { ref, watch } from 'vue'
 
 interface SpecAttribute {
   id: string
@@ -30,7 +30,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isEdit: false
+  isEdit: false,
 })
 
 const emit = defineEmits<{
@@ -49,12 +49,18 @@ const skuList = ref<Sku[]>(
         originalPrice: 0,
         costPrice: 0,
         stock: 0,
-        lowStock: 10
-      }]
+        lowStock: 10,
+      }],
 )
 
 // 是否正在更新（防止循环）
 let isUpdating = false
+
+type UploadError = Parameters<NonNullable<UploadRequestOptions['onError']>>[0]
+
+function toUploadError(error: unknown): UploadError {
+  return error as UploadError
+}
 
 // 生成唯一ID
 function generateId() {
@@ -65,7 +71,7 @@ function generateId() {
 function deriveSpecAttributesFromSkus(skus: Sku[]) {
   const attrMap = new Map<string, Set<string>>()
 
-  skus.forEach(sku => {
+  skus.forEach((sku) => {
     Object.entries(sku.specs).forEach(([attrName, valueName]) => {
       if (!attrMap.has(attrName)) {
         attrMap.set(attrName, new Set())
@@ -77,13 +83,15 @@ function deriveSpecAttributesFromSkus(skus: Sku[]) {
   return Array.from(attrMap.entries()).map(([name, valueSet]) => ({
     id: generateId(),
     name,
-    values: Array.from(valueSet).map(v => ({ id: generateId(), name: v }))
+    values: Array.from(valueSet).map(v => ({ id: generateId(), name: v })),
   }))
 }
 
 // 获取完整 URL（用于显示）
 function getFullUrl(path: string | undefined) {
-  if (!path) return ''
+  if (!path) {
+    return ''
+  }
   // 如果已经是完整 URL 或 base64，直接返回
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
     return path
@@ -124,7 +132,7 @@ function handleAddAttribute() {
   specAttributes.value.push({
     id: generateId(),
     name: '',
-    values: []
+    values: [],
   })
 }
 
@@ -143,7 +151,7 @@ function handleAddValue(attrId: string) {
   if (attr) {
     attr.values.push({
       id: generateId(),
-      name: ''
+      name: '',
     })
   }
 }
@@ -172,14 +180,16 @@ function generateSkus() {
       originalPrice: 0,
       costPrice: 0,
       stock: 0,
-      lowStock: 10
+      lowStock: 10,
     }]
     return
   }
 
   // 笛卡尔积生成所有组合
   const combinations = (arrays: string[][]): string[][] => {
-    if (arrays.length === 0) return [[]]
+    if (arrays.length === 0) {
+      return [[]]
+    }
     const [first, ...rest] = arrays
     const restCombinations = combinations(rest)
     const result: string[][] = []
@@ -194,14 +204,14 @@ function generateSkus() {
   const attrValues = validAttrs.map(attr => attr.values.map(v => v.name))
   const combos = combinations(attrValues)
 
-  const newSkus: Sku[] = combos.map((combo, index) => {
+  const newSkus: Sku[] = combos.map((combo) => {
     const specs: Record<string, string> = {}
     validAttrs.forEach((attr, i) => {
       specs[attr.name] = combo[i]
     })
 
     // 尝试匹配现有SKU
-    const existingSku = skuList.value.find(s => {
+    const existingSku = skuList.value.find((s) => {
       return Object.keys(specs).every(key => s.specs[key] === specs[key])
     })
 
@@ -213,7 +223,7 @@ function generateSkus() {
       costPrice: existingSku?.costPrice || 0,
       stock: existingSku?.stock || 0,
       lowStock: existingSku?.lowStock || 10,
-      image: existingSku?.image
+      image: existingSku?.image,
     }
   })
 
@@ -247,13 +257,15 @@ async function handleSkuImageUpload(options: UploadRequestOptions, skuId: string
         sku.image = relativePath // 存储相对路径
       }
       onSuccess(fullUrl) // el-upload 使用完整 URL 显示
-    } else {
-      ElMessage.error(result.message || '上传失败')
-      onError(new Error(result.message || '上传失败'))
     }
-  } catch (error) {
+    else {
+      ElMessage.error(result.message || '上传失败')
+      onError(toUploadError(new Error(result.message || '上传失败')))
+    }
+  }
+  catch (error) {
     ElMessage.error('上传失败')
-    onError(error as Error)
+    onError(toUploadError(error))
   }
 }
 
@@ -291,7 +303,7 @@ function beforeSkuImageUpload(file: File) {
 
       <!-- 空状态 -->
       <div v-if="specAttributes.length === 0" class="empty-state">
-        <FaIcon name="i-heroicons-solid:inbox" class="size-12 text-gray-300 mb-2" />
+        <FaIcon name="i-heroicons-solid:inbox" class="mb-2 size-12 text-gray-300" />
         <p>暂无规格，请点击"添加规格"添加商品规格</p>
       </div>
 
@@ -378,19 +390,31 @@ function beforeSkuImageUpload(file: File) {
                 规格
               </th>
               <th
-                v-else
                 v-for="attr in specAttributes.filter(a => a.name && a.values.length)"
+                v-else
                 :key="attr.id"
                 class="spec-col"
               >
                 {{ attr.name }}
               </th>
-              <th class="price-col">售价(元)</th>
-              <th class="price-col">原价(元)</th>
-              <th class="price-col">成本价(元)</th>
-              <th class="stock-col">库存</th>
-              <th class="stock-col">预警库存</th>
-              <th class="image-col">SKU图片</th>
+              <th class="price-col">
+                售价(元)
+              </th>
+              <th class="price-col">
+                原价(元)
+              </th>
+              <th class="price-col">
+                成本价(元)
+              </th>
+              <th class="stock-col">
+                库存
+              </th>
+              <th class="stock-col">
+                预警库存
+              </th>
+              <th class="image-col">
+                SKU图片
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -399,8 +423,8 @@ function beforeSkuImageUpload(file: File) {
                 默认规格
               </td>
               <td
-                v-else
                 v-for="attr in specAttributes.filter(a => a.name && a.values.length)"
+                v-else
                 :key="attr.id"
                 class="spec-col"
               >
@@ -474,8 +498,8 @@ function beforeSkuImageUpload(file: File) {
                   type="danger"
                   size="small"
                   link
-                  @click="sku.image = undefined"
                   class="sku-image-remove"
+                  @click="sku.image = undefined"
                 >
                   <template #icon>
                     <FaIcon name="i-iconoir:trash" />

@@ -6,6 +6,53 @@ import { defineConfig, loadEnv } from 'vite'
 import pkg from './package.json'
 import createVitePlugins from './vite/plugins'
 
+function createManualChunks(id: string) {
+  if (!id.includes('node_modules')) {
+    return
+  }
+
+  if (
+    id.includes('/vue/')
+    || id.includes('/vue-router/')
+    || id.includes('/pinia/')
+    || id.includes('/@vue/')
+    || id.includes('/@vueuse/')
+  ) {
+    return 'vendor-vue'
+  }
+
+  if (id.includes('/element-plus/')) {
+    return 'vendor-element-plus'
+  }
+
+  if (id.includes('/@wangeditor/')) {
+    return 'vendor-editor'
+  }
+
+  if (
+    id.includes('/@iconify/')
+    || id.includes('/lucide-vue-next/')
+    || id.includes('/@element-plus/icons-vue/')
+  ) {
+    return 'vendor-icons'
+  }
+
+  if (
+    id.includes('/axios/')
+    || id.includes('/dayjs/')
+    || id.includes('/qs/')
+    || id.includes('/zod/')
+    || id.includes('/vee-validate/')
+    || id.includes('/@vee-validate/')
+    || id.includes('/reka-ui/')
+    || id.includes('/@floating-ui/')
+  ) {
+    return 'vendor-utils'
+  }
+
+  return 'vendor-misc'
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd())
@@ -34,6 +81,13 @@ export default defineConfig(({ mode, command }) => {
     build: {
       outDir: mode === 'production' ? 'dist' : `dist-${mode}`,
       sourcemap: env.VITE_BUILD_SOURCEMAP === 'true',
+      // Large vendor-only chunks are intentionally isolated for caching and lazy loading.
+      chunkSizeWarningLimit: 900,
+      rollupOptions: {
+        output: {
+          manualChunks: createManualChunks,
+        },
+      },
     },
     define: {
       __SYSTEM_INFO__: JSON.stringify({

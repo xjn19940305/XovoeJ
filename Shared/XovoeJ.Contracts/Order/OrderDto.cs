@@ -72,6 +72,12 @@ namespace XovoeJ.Contracts.Order
         /// </summary>
         public DateTime? ShipTime { get; set; }
 
+        public string? ShippingCompany { get; set; }
+
+        public string? TrackingNo { get; set; }
+
+        public string? ShippingRemark { get; set; }
+
         /// <summary>
         /// 收货时间
         /// </summary>
@@ -101,6 +107,16 @@ namespace XovoeJ.Contracts.Order
         /// 备注
         /// </summary>
         public string? Remark { get; set; }
+
+        public bool NeedInvoice { get; set; }
+
+        public int? InvoiceType { get; set; }
+
+        public string? InvoiceTitle { get; set; }
+
+        public string? InvoiceTaxNo { get; set; }
+
+        public string? InvoiceEmail { get; set; }
 
         /// <summary>
         /// 创建时间

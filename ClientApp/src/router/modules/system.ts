@@ -1,16 +1,21 @@
 import type { Route } from '#/global'
+import { permissionCodes } from '@/utils/permission'
 
 function Layout() {
   return import('@/layouts/index.vue')
 }
 
-// 权限管理路由
+const systemMenuPermissions = [
+  permissionCodes.admin.user.read,
+  permissionCodes.admin.role.read,
+  permissionCodes.admin.role.assignPermissions,
+]
+
 const systemRoute: Route.recordMainRaw = {
   meta: {
     title: '权限管理',
     icon: 'i-heroicons-solid:shield-check',
-    // 只要有任何一个子权限就能看到菜单
-    auth: ['system:view', 'system:user:view', 'system:role:view', 'system:role:assign-permissions'],
+    auth: systemMenuPermissions,
   },
   children: [
     {
@@ -21,8 +26,7 @@ const systemRoute: Route.recordMainRaw = {
       meta: {
         title: '权限管理',
         icon: 'i-heroicons-solid:shield-check',
-        // 只要有任何一个子权限就能看到菜单
-        auth: ['system:view', 'system:user:view', 'system:role:view', 'system:role:assign-permissions'],
+        auth: systemMenuPermissions,
       },
       children: [
         {
@@ -32,7 +36,7 @@ const systemRoute: Route.recordMainRaw = {
           meta: {
             title: '用户管理',
             icon: 'i-heroicons-solid:users',
-            auth: ['system:user:view'],
+            auth: [permissionCodes.admin.user.read],
           },
         },
         {
@@ -42,7 +46,7 @@ const systemRoute: Route.recordMainRaw = {
           meta: {
             title: '角色管理',
             icon: 'i-heroicons-solid:identification',
-            auth: ['system:role:view'],
+            auth: [permissionCodes.admin.role.read],
           },
         },
         {
@@ -52,7 +56,7 @@ const systemRoute: Route.recordMainRaw = {
           meta: {
             title: '角色授权',
             icon: 'i-heroicons-solid:key',
-            auth: ['system:role:assign-permissions'],
+            auth: [permissionCodes.admin.role.assignPermissions],
           },
         },
       ],

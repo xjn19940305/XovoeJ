@@ -11,6 +11,7 @@ namespace XovoeJ.Api.Managements
     /// 角色管理控制器
     /// </summary>
     [ApiController]
+    [Route("api/admin/roles")]
     [Route("api/roles")]
     [Produces("application/json")]
     [Authorize]
@@ -31,11 +32,17 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <returns>角色列表</returns>
         [HttpGet]
-        public async Task<IActionResult> GetRoles()
+        public async Task<IActionResult> GetRoles([FromQuery] string? name = null)
         {
             try
             {
                 var roles = await _roleService.GetRolesAsync();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    roles = roles
+                        .Where(role => role.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
                 return Ok(roles);
             }
             catch (Exception ex)

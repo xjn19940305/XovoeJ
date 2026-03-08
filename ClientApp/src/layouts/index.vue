@@ -43,12 +43,7 @@ const isTabbarHide = computed(() => {
 // 工具栏是否隐藏
 const isToolbarHide = computed(() => {
   return !settingsStore.settings.toolbar.enable
-    || !Object.keys(settingsStore.settings.toolbar).some((key) => {
-      if (settingsStore.settings.app.routeBaseOn === 'filesystem' && key === 'breadcrumb') {
-        return false
-      }
-      return settingsStore.settings.toolbar[key as keyof typeof settingsStore.settings.toolbar]
-    })
+    || !Object.keys(settingsStore.settings.toolbar).some(key => settingsStore.settings.toolbar[key as keyof typeof settingsStore.settings.toolbar])
 })
 
 const isLink = computed(() => !!routeInfo.meta.link)

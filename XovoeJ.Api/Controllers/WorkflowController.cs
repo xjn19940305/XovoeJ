@@ -8,10 +8,8 @@ using XovoeJ.Entities;
 
 namespace XovoeJ.Api.Controllers
 {
-    /// <summary>
-    /// 工作流控制器
-    /// </summary>
     [ApiController]
+    [Route("api/admin/workflow")]
     [Route("api/workflow")]
     [Produces("application/json")]
     [ApiGroup(ApiGroupNames.MANAGEMENT)]
@@ -21,28 +19,19 @@ namespace XovoeJ.Api.Controllers
         private readonly IWorkflowService _workflowService;
         private readonly ILogger<WorkflowController> _logger;
 
-        public WorkflowController(
-            IWorkflowService workflowService,
-            ILogger<WorkflowController> logger)
+        public WorkflowController(IWorkflowService workflowService, ILogger<WorkflowController> logger)
         {
             _workflowService = workflowService;
             _logger = logger;
         }
 
-        #region 工作流定义管理（管理员）
-
-        /// <summary>
-        /// 创建工作流定义
-        /// </summary>
-        /// <param name="request">创建请求</param>
-        /// <returns>工作流定义</returns>
         [HttpPost("definitions")]
         public async Task<IActionResult> CreateDefinition([FromBody] CreateWorkflowDefinitionRequest request)
         {
             try
             {
                 var definition = await _workflowService.CreateDefinitionAsync(request);
-                return Ok(new { data = definition, message = "创建成功" });
+                return Ok(definition);
             }
             catch (ArgumentException ex)
             {
@@ -50,36 +39,26 @@ namespace XovoeJ.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "创建工作流定义失败");
-                return BadRequest(new { message = "创建失败" });
+                _logger.LogError(ex, "Failed to create workflow definition.");
+                return BadRequest(new { message = "Failed to create workflow definition." });
             }
         }
 
-        /// <summary>
-        /// 获取工作流定义列表
-        /// </summary>
-        /// <param name="type">工作流类型（可选）</param>
-        /// <returns>工作流定义列表</returns>
         [HttpGet("definitions")]
         public async Task<IActionResult> GetDefinitions([FromQuery] string? type = null)
         {
             try
             {
                 var definitions = await _workflowService.GetDefinitionsAsync(type);
-                return Ok(new { data = definitions, message = "获取成功" });
+                return Ok(definitions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "获取工作流定义列表失败");
-                return BadRequest(new { message = "获取失败" });
+                _logger.LogError(ex, "Failed to load workflow definitions.");
+                return BadRequest(new { message = "Failed to load workflow definitions." });
             }
         }
 
-        /// <summary>
-        /// 获取工作流定义详情
-        /// </summary>
-        /// <param name="code">工作流编码</param>
-        /// <returns>工作流定义详情</returns>
         [HttpGet("definitions/{code}")]
         public async Task<IActionResult> GetDefinition(string code)
         {
@@ -88,23 +67,18 @@ namespace XovoeJ.Api.Controllers
                 var definition = await _workflowService.GetDefinitionAsync(code);
                 if (definition == null)
                 {
-                    return NotFound(new { message = "工作流定义不存在" });
+                    return NotFound(new { message = "Workflow definition not found." });
                 }
-                return Ok(new { data = definition, message = "获取成功" });
+
+                return Ok(definition);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "获取工作流定义失败: {Code}", code);
-                return BadRequest(new { message = "获取失败" });
+                _logger.LogError(ex, "Failed to load workflow definition: {Code}", code);
+                return BadRequest(new { message = "Failed to load workflow definition." });
             }
         }
 
-        /// <summary>
-        /// 更新工作流定义
-        /// </summary>
-        /// <param name="code">工作流编码</param>
-        /// <param name="request">更新请求</param>
-        /// <returns>更新后的工作流定义</returns>
         [HttpPut("definitions/{code}")]
         public async Task<IActionResult> UpdateDefinition(string code, [FromBody] CreateWorkflowDefinitionRequest request)
         {
@@ -113,9 +87,10 @@ namespace XovoeJ.Api.Controllers
                 var definition = await _workflowService.UpdateDefinitionAsync(code, request);
                 if (definition == null)
                 {
-                    return NotFound(new { message = "工作流定义不存在" });
+                    return NotFound(new { message = "Workflow definition not found." });
                 }
-                return Ok(new { data = definition, message = "更新成功" });
+
+                return Ok(definition);
             }
             catch (ArgumentException ex)
             {
@@ -123,16 +98,11 @@ namespace XovoeJ.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "更新工作流定义失败: {Code}", code);
-                return BadRequest(new { message = "更新失败" });
+                _logger.LogError(ex, "Failed to update workflow definition: {Code}", code);
+                return BadRequest(new { message = "Failed to update workflow definition." });
             }
         }
 
-        /// <summary>
-        /// 删除工作流定义
-        /// </summary>
-        /// <param name="code">工作流编码</param>
-        /// <returns></returns>
         [HttpDelete("definitions/{code}")]
         public async Task<IActionResult> DeleteDefinition(string code)
         {
@@ -141,9 +111,10 @@ namespace XovoeJ.Api.Controllers
                 var result = await _workflowService.DeleteDefinitionAsync(code);
                 if (!result)
                 {
-                    return NotFound(new { message = "工作流定义不存在" });
+                    return NotFound(new { message = "Workflow definition not found." });
                 }
-                return Ok(new { message = "删除成功" });
+
+                return Ok(new { message = "Workflow definition deleted successfully." });
             }
             catch (ArgumentException ex)
             {
@@ -151,39 +122,32 @@ namespace XovoeJ.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "删除工作流定义失败: {Code}", code);
-                return BadRequest(new { message = "删除失败" });
+                _logger.LogError(ex, "Failed to delete workflow definition: {Code}", code);
+                return BadRequest(new { message = "Failed to delete workflow definition." });
             }
         }
 
-        #endregion
-
-        #region 工作流实例管理
-
-        /// <summary>
-        /// 发起工作流
-        /// </summary>
-        /// <param name="request">发起请求</param>
-        /// <returns>工作流实例</returns>
         [HttpPost("start")]
         public async Task<IActionResult> StartWorkflow([FromBody] StartWorkflowRequest request)
         {
             try
             {
-                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = GetCurrentUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "无效的用户信息" });
+                    return Unauthorized(new { message = "Invalid user context." });
                 }
 
-                var userName = User.FindFirstValue("username") ?? User.FindFirstValue("name");
+                var userName = User.FindFirstValue("username") ?? User.FindFirstValue("name") ?? string.Empty;
+                var instance = await _workflowService.StartWorkflowAsync(userId, userName, request);
 
-                var instance = await _workflowService.StartWorkflowAsync(userId, userName ?? "", request);
+                _logger.LogInformation(
+                    "Workflow started. InstanceId={InstanceId}, WorkflowCode={WorkflowCode}, UserId={UserId}",
+                    instance.Id,
+                    request.WorkflowCode,
+                    userId);
 
-                _logger.LogInformation("工作流已发起: InstanceId={InstanceId}, WorkflowCode={WorkflowCode}, UserId={UserId}",
-                    instance.Id, request.WorkflowCode, userId);
-
-                return Ok(new { data = instance, message = "发起成功" });
+                return Ok(instance);
             }
             catch (ArgumentException ex)
             {
@@ -191,16 +155,11 @@ namespace XovoeJ.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "发起工作流失败");
-                return BadRequest(new { message = "发起失败" });
+                _logger.LogError(ex, "Failed to start workflow.");
+                return BadRequest(new { message = "Failed to start workflow." });
             }
         }
 
-        /// <summary>
-        /// 获取工作流实例详情
-        /// </summary>
-        /// <param name="instanceId">实例ID</param>
-        /// <returns>工作流实例详情</returns>
         [HttpGet("instances/{instanceId}")]
         public async Task<IActionResult> GetInstance(string instanceId)
         {
@@ -209,25 +168,18 @@ namespace XovoeJ.Api.Controllers
                 var instance = await _workflowService.GetInstanceAsync(instanceId);
                 if (instance == null)
                 {
-                    return NotFound(new { message = "工作流实例不存在" });
+                    return NotFound(new { message = "Workflow instance not found." });
                 }
-                return Ok(new { data = instance, message = "获取成功" });
+
+                return Ok(instance);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "获取工作流实例失败: {InstanceId}", instanceId);
-                return BadRequest(new { message = "获取失败" });
+                _logger.LogError(ex, "Failed to load workflow instance: {InstanceId}", instanceId);
+                return BadRequest(new { message = "Failed to load workflow instance." });
             }
         }
 
-        /// <summary>
-        /// 获取我发起的工作流列表
-        /// </summary>
-        /// <param name="workflowType">工作流类型（可选）</param>
-        /// <param name="status">状态（可选）</param>
-        /// <param name="page">页码</param>
-        /// <param name="pageSize">每页数量</param>
-        /// <returns>工作流列表</returns>
         [HttpGet("instances/my")]
         public async Task<IActionResult> GetMyInstances(
             [FromQuery] string? workflowType = null,
@@ -237,38 +189,28 @@ namespace XovoeJ.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = GetCurrentUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "无效的用户信息" });
+                    return Unauthorized(new { message = "Invalid user context." });
                 }
 
                 var (items, total) = await _workflowService.GetMyInstancesAsync(userId, workflowType, status, page, pageSize);
-
                 return Ok(new
                 {
                     data = items,
                     total,
                     page,
-                    pageSize,
-                    message = "获取成功"
+                    pageSize
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "获取我的工作流列表失败");
-                return BadRequest(new { message = "获取失败" });
+                _logger.LogError(ex, "Failed to load my workflow instances.");
+                return BadRequest(new { message = "Failed to load my workflow instances." });
             }
         }
 
-        /// <summary>
-        /// 获取待办任务列表
-        /// </summary>
-        /// <param name="workflowType">工作流类型（可选）</param>
-        /// <param name="status">状态（可选）</param>
-        /// <param name="page">页码</param>
-        /// <param name="pageSize">每页数量</param>
-        /// <returns>待办列表</returns>
         [HttpGet("pending")]
         public async Task<IActionResult> GetPendingTasks(
             [FromQuery] string? workflowType = null,
@@ -278,82 +220,78 @@ namespace XovoeJ.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = GetCurrentUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "无效的用户信息" });
+                    return Unauthorized(new { message = "Invalid user context." });
                 }
 
-                var query = new PendingTasksQuery
+                var result = await _workflowService.GetPendingTasksAsync(userId, new PendingTasksQuery
                 {
                     WorkflowType = workflowType,
                     Status = status,
                     Page = page,
                     PageSize = pageSize
-                };
+                });
 
-                var result = await _workflowService.GetPendingTasksAsync(userId, query);
-
-                return Ok(new { data = result, message = "获取成功" });
+                return Ok(new
+                {
+                    data = result.Items,
+                    total = result.Total,
+                    page = result.Page,
+                    pageSize = result.PageSize,
+                    statusCount = result.StatusCount
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "获取待办列表失败");
-                return BadRequest(new { message = "获取失败" });
+                _logger.LogError(ex, "Failed to load pending workflow tasks.");
+                return BadRequest(new { message = "Failed to load pending workflow tasks." });
             }
         }
 
-        /// <summary>
-        /// 获取待办数量统计
-        /// </summary>
-        /// <returns>待办数量统计</returns>
         [HttpGet("pending/count")]
         public async Task<IActionResult> GetPendingCount()
         {
             try
             {
-                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = GetCurrentUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "无效的用户信息" });
+                    return Unauthorized(new { message = "Invalid user context." });
                 }
 
                 var counts = await _workflowService.GetPendingCountAsync(userId);
-
-                return Ok(new { data = counts, message = "获取成功" });
+                return Ok(counts);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "获取待办数量失败");
-                return BadRequest(new { message = "获取失败" });
+                _logger.LogError(ex, "Failed to load pending workflow counts.");
+                return BadRequest(new { message = "Failed to load pending workflow counts." });
             }
         }
 
-        /// <summary>
-        /// 处理审批
-        /// </summary>
-        /// <param name="instanceId">实例ID</param>
-        /// <param name="request">审批请求</param>
-        /// <returns></returns>
         [HttpPost("instances/{instanceId}/approve")]
         public async Task<IActionResult> ProcessApproval(string instanceId, [FromBody] ApprovalRequest request)
         {
             try
             {
-                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = GetCurrentUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "无效的用户信息" });
+                    return Unauthorized(new { message = "Invalid user context." });
                 }
 
-                var userName = User.FindFirstValue("username") ?? User.FindFirstValue("name");
+                var userName = User.FindFirstValue("username") ?? User.FindFirstValue("name") ?? string.Empty;
+                await _workflowService.ProcessApprovalAsync(userId, userName, instanceId, request);
 
-                await _workflowService.ProcessApprovalAsync(userId, userName ?? "", instanceId, request);
+                _logger.LogInformation(
+                    "Workflow approval processed. InstanceId={InstanceId}, UserId={UserId}, Action={Action}",
+                    instanceId,
+                    userId,
+                    request.Action);
 
-                _logger.LogInformation("审批处理完成: InstanceId={InstanceId}, UserId={UserId}, Action={Action}",
-                    instanceId, userId, request.Action);
-
-                return Ok(new { message = "审批成功" });
+                return Ok(new { message = "Approval processed successfully." });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -369,36 +307,30 @@ namespace XovoeJ.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "处理审批失败: {InstanceId}", instanceId);
-                return BadRequest(new { message = "处理失败" });
+                _logger.LogError(ex, "Failed to process workflow approval: {InstanceId}", instanceId);
+                return BadRequest(new { message = "Failed to process workflow approval." });
             }
         }
 
-        /// <summary>
-        /// 撤回工作流
-        /// </summary>
-        /// <param name="instanceId">实例ID</param>
-        /// <returns></returns>
         [HttpPost("instances/{instanceId}/withdraw")]
         public async Task<IActionResult> WithdrawWorkflow(string instanceId)
         {
             try
             {
-                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = GetCurrentUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "无效的用户信息" });
+                    return Unauthorized(new { message = "Invalid user context." });
                 }
 
                 var result = await _workflowService.WithdrawWorkflowAsync(userId, instanceId);
                 if (!result)
                 {
-                    return NotFound(new { message = "工作流实例不存在" });
+                    return NotFound(new { message = "Workflow instance not found." });
                 }
 
-                _logger.LogInformation("工作流已撤回: InstanceId={InstanceId}, UserId={UserId}", instanceId, userId);
-
-                return Ok(new { message = "撤回成功" });
+                _logger.LogInformation("Workflow withdrawn. InstanceId={InstanceId}, UserId={UserId}", instanceId, userId);
+                return Ok(new { message = "Workflow withdrawn successfully." });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -410,17 +342,11 @@ namespace XovoeJ.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "撤回工作流失败: {InstanceId}", instanceId);
-                return BadRequest(new { message = "撤回失败" });
+                _logger.LogError(ex, "Failed to withdraw workflow: {InstanceId}", instanceId);
+                return BadRequest(new { message = "Failed to withdraw workflow." });
             }
         }
 
-        /// <summary>
-        /// 终止工作流（管理员）
-        /// </summary>
-        /// <param name="instanceId">实例ID</param>
-        /// <param name="reason">终止原因</param>
-        /// <returns></returns>
         [HttpPost("instances/{instanceId}/terminate")]
         [Authorize(Policy = "Admin")]
         public async Task<IActionResult> TerminateWorkflow(string instanceId, [FromBody] TerminateRequest? request = null)
@@ -430,30 +356,27 @@ namespace XovoeJ.Api.Controllers
                 var result = await _workflowService.TerminateWorkflowAsync(instanceId, request?.Reason);
                 if (!result)
                 {
-                    return NotFound(new { message = "工作流实例不存在" });
+                    return NotFound(new { message = "Workflow instance not found." });
                 }
 
-                _logger.LogInformation("工作流已终止: InstanceId={InstanceId}, Reason={Reason}", instanceId, request?.Reason);
-
-                return Ok(new { message = "工作流已终止" });
+                _logger.LogInformation("Workflow terminated. InstanceId={InstanceId}, Reason={Reason}", instanceId, request?.Reason);
+                return Ok(new { message = "Workflow terminated successfully." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "终止工作流失败: {InstanceId}", instanceId);
-                return BadRequest(new { message = "终止失败" });
+                _logger.LogError(ex, "Failed to terminate workflow: {InstanceId}", instanceId);
+                return BadRequest(new { message = "Failed to terminate workflow." });
             }
         }
-        #endregion
+
+        private string? GetCurrentUserId()
+        {
+            return User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
     }
 
-    /// <summary>
-    /// 终止工作流请求
-    /// </summary>
     public class TerminateRequest
     {
-        /// <summary>
-        /// 终止原因
-        /// </summary>
         public string? Reason { get; set; }
     }
 }

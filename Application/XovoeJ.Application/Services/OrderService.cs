@@ -140,6 +140,7 @@ namespace XovoeJ.Application.Services
                 }
 
                 // 计算金额
+                ValidateInvoiceRequest(request);
                 var totalAmount = orderItems.Sum(i => i.Subtotal);
                 var discountAmount = 0m;
                 var freightAmount = 0m; // TODO: 计算运费
@@ -163,7 +164,12 @@ namespace XovoeJ.Application.Services
                     ConsigneeName = request.ConsigneeName,
                     ConsigneeMobile = request.ConsigneeMobile,
                     ConsigneeAddress = request.ConsigneeAddress,
-                    Remark = request.Remark
+                    Remark = request.Remark,
+                    NeedInvoice = request.NeedInvoice,
+                    InvoiceType = request.NeedInvoice ? request.InvoiceType : null,
+                    InvoiceTitle = request.NeedInvoice ? NormalizeOptionalText(request.InvoiceTitle) : null,
+                    InvoiceTaxNo = request.NeedInvoice ? NormalizeOptionalText(request.InvoiceTaxNo) : null,
+                    InvoiceEmail = request.NeedInvoice ? NormalizeOptionalText(request.InvoiceEmail) : null
                 };
 
                 _dbContext.Orders.Add(order);
@@ -409,7 +415,7 @@ namespace XovoeJ.Application.Services
         /// <summary>
         /// 发货（管理端）
         /// </summary>
-        public async Task<bool> ShipOrderAsync(string orderId)
+        public async Task<bool> ShipOrderAsync(string orderId, ShipOrderRequestDto request)
         {
             var order = await _dbContext.Orders
                 .FirstOrDefaultAsync(o => o.Id == orderId);
@@ -427,10 +433,46 @@ namespace XovoeJ.Application.Services
             order.Status = OrderStatus.Shipped;
             order.ShipStatus = 1;
             order.ShipTime = DateTime.UtcNow;
+            order.ShippingCompany = request.ShippingCompany.Trim();
+            order.TrackingNo = request.TrackingNo.Trim();
+            order.ShippingRemark = string.IsNullOrWhiteSpace(request.ShippingRemark) ? null : request.ShippingRemark.Trim();
             order.UpdatedAt = DateTime.UtcNow;
 
             await _dbContext.SaveChangesAsync();
             return true;
+        }
+
+        /// <summary>
+        /// 获取订单物流信息
+        /// </summary>
+        public async Task<OrderTrackingDto?> GetOrderTrackingAsync(string userId, string orderId)
+        {
+            var order = await _dbContext.Orders
+                .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            return new OrderTrackingDto
+            {
+                OrderId = order.Id,
+                OrderNo = order.OrderNo,
+                ShippingCompany = order.ShippingCompany,
+                TrackingNo = order.TrackingNo,
+                ShippingRemark = order.ShippingRemark,
+                ShipTime = order.ShipTime,
+                TrackingStatus = order.Status switch
+                {
+                    OrderStatus.Paid => "待发货",
+                    OrderStatus.Shipped => "运输中",
+                    OrderStatus.Received => "已签收",
+                    OrderStatus.Completed => "已完成",
+                    OrderStatus.Cancelled => "已取消",
+                    _ => "待支付",
+                },
+            };
         }
 
         /// <summary>
@@ -488,12 +530,20 @@ namespace XovoeJ.Application.Services
                 PayTime = order.PayTime,
                 ShipStatus = order.ShipStatus,
                 ShipTime = order.ShipTime,
+                ShippingCompany = order.ShippingCompany,
+                TrackingNo = order.TrackingNo,
+                ShippingRemark = order.ShippingRemark,
                 ReceiveTime = order.ReceiveTime,
                 FinishTime = order.FinishTime,
                 ConsigneeName = order.ConsigneeName,
                 ConsigneeMobile = order.ConsigneeMobile,
                 ConsigneeAddress = order.ConsigneeAddress,
                 Remark = order.Remark,
+                NeedInvoice = order.NeedInvoice,
+                InvoiceType = order.InvoiceType,
+                InvoiceTitle = order.InvoiceTitle,
+                InvoiceTaxNo = order.InvoiceTaxNo,
+                InvoiceEmail = order.InvoiceEmail,
                 CreatedAt = order.CreatedAt,
                 OrderItems = order.OrderItems.Select(i => new OrderItemDto
                 {
@@ -508,6 +558,34 @@ namespace XovoeJ.Application.Services
                     Subtotal = i.Subtotal
                 }).ToList()
             };
+        }
+
+        private static void ValidateInvoiceRequest(SubmitOrderRequestDto request)
+        {
+            if (!request.NeedInvoice)
+            {
+                return;
+            }
+
+            if (request.InvoiceType is not (1 or 2))
+            {
+                throw new ArgumentException("发票类型不正确");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.InvoiceTitle))
+            {
+                throw new ArgumentException("请填写发票抬头");
+            }
+
+            if (request.InvoiceType == 2 && string.IsNullOrWhiteSpace(request.InvoiceTaxNo))
+            {
+                throw new ArgumentException("企业发票请填写税号");
+            }
+        }
+
+        private static string? NormalizeOptionalText(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         #endregion

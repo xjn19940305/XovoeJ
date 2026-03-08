@@ -29,6 +29,7 @@ namespace XovoeJ.Api.Managements
         /// 获取分类列表
         /// </summary>
         /// <returns>分类列表</returns>
+        [HttpGet("api/admin/categories")]
         [HttpGet("api/categories")]
         public async Task<IActionResult> GetCategories()
         {
@@ -48,6 +49,7 @@ namespace XovoeJ.Api.Managements
         /// 获取分类树
         /// </summary>
         /// <returns>分类树</returns>
+        [HttpGet("api/admin/categories/tree")]
         [HttpGet("api/categories/tree")]
         public async Task<IActionResult> GetCategoryTree()
         {
@@ -68,6 +70,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="categoryId">分类ID</param>
         /// <returns>分类信息</returns>
+        [HttpGet("api/admin/categories/{categoryId}")]
         [HttpGet("api/categories/{categoryId}")]
         public async Task<IActionResult> GetCategoryById(string categoryId)
         {
@@ -92,6 +95,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="request">创建请求</param>
         /// <returns>创建的分类信息</returns>
+        [HttpPost("api/admin/categories")]
         [HttpPost("api/categories")]
         [Authorize]
         public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequestDto request)
@@ -118,6 +122,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="categoryId">分类ID</param>
         /// <param name="request">更新请求</param>
         /// <returns>更新后的分类信息</returns>
+        [HttpPut("api/admin/categories/{categoryId}")]
         [HttpPut("api/categories/{categoryId}")]
         [Authorize]
         public async Task<IActionResult> UpdateCategory(string categoryId, [FromBody] UpdateCategoryRequestDto request)
@@ -147,6 +152,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="categoryId">分类ID</param>
         /// <returns></returns>
+        [HttpDelete("api/admin/categories/{categoryId}")]
         [HttpDelete("api/categories/{categoryId}")]
         [Authorize]
         public async Task<IActionResult> DeleteCategory(string categoryId)
@@ -180,6 +186,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="query">查询参数</param>
         /// <returns>商品列表</returns>
+        [HttpGet("api/admin/products")]
         [HttpGet("api/products")]
         public async Task<IActionResult> GetProducts([FromQuery] ProductListQueryDto query)
         {
@@ -200,6 +207,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="productId">商品ID</param>
         /// <returns>商品信息</returns>
+        [HttpGet("api/admin/products/{productId}")]
         [HttpGet("api/products/{productId}")]
         public async Task<IActionResult> GetProductById(string productId)
         {
@@ -228,6 +236,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="request">创建请求</param>
         /// <returns>创建的商品信息</returns>
+        [HttpPost("api/admin/products")]
         [HttpPost("api/products")]
         [Authorize]
         public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequestDto request)
@@ -254,6 +263,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="productId">商品ID</param>
         /// <param name="request">更新请求</param>
         /// <returns>更新后的商品信息</returns>
+        [HttpPut("api/admin/products/{productId}")]
         [HttpPut("api/products/{productId}")]
         [Authorize]
         public async Task<IActionResult> UpdateProduct(string productId, [FromBody] UpdateProductRequestDto request)
@@ -283,6 +293,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <param name="productId">商品ID</param>
         /// <returns></returns>
+        [HttpDelete("api/admin/products/{productId}")]
         [HttpDelete("api/products/{productId}")]
         [Authorize]
         public async Task<IActionResult> DeleteProduct(string productId)

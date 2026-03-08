@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
+import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import roleApi from '@/api/modules/role'
-import dayjs from 'dayjs'
 
 defineOptions({
   name: 'SystemRole',
@@ -279,8 +279,12 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
   </div>

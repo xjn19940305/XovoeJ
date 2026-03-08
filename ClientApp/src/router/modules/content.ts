@@ -1,16 +1,21 @@
 import type { Route } from '#/global'
+import { permissionCodes } from '@/utils/permission'
 
 function Layout() {
   return import('@/layouts/index.vue')
 }
 
-// 内容管理路由
+const contentMenuPermissions = [
+  permissionCodes.admin.banner.read,
+  permissionCodes.admin.dictionary.read,
+  permissionCodes.admin.workflow.read,
+]
+
 const contentRoute: Route.recordMainRaw = {
   meta: {
     title: '内容管理',
     icon: 'i-heroicons-solid:document-text',
-    // 只要有任何一个子权限就能看到菜单
-    auth: ['content:view', 'content:banner:view', 'content:dict:view', 'content:workflow:view'],
+    auth: contentMenuPermissions,
   },
   children: [
     {
@@ -21,8 +26,7 @@ const contentRoute: Route.recordMainRaw = {
       meta: {
         title: '内容管理',
         icon: 'i-heroicons-solid:document-text',
-        // 只要有任何一个子权限就能看到菜单
-        auth: ['content:view', 'content:banner:view', 'content:dict:view', 'content:workflow:view'],
+        auth: contentMenuPermissions,
       },
       children: [
         {
@@ -32,7 +36,7 @@ const contentRoute: Route.recordMainRaw = {
           meta: {
             title: '轮播图管理',
             icon: 'i-heroicons-solid:photo',
-            auth: ['content:banner:view'],
+            auth: [permissionCodes.admin.banner.read],
           },
         },
         {
@@ -42,7 +46,7 @@ const contentRoute: Route.recordMainRaw = {
           meta: {
             title: '字典管理',
             icon: 'i-heroicons-solid:book-open',
-            auth: ['content:dict:view'],
+            auth: [permissionCodes.admin.dictionary.read],
           },
         },
         {
@@ -52,7 +56,7 @@ const contentRoute: Route.recordMainRaw = {
           meta: {
             title: '工作流配置',
             icon: 'i-heroicons-solid:academic-cap',
-            auth: ['content:workflow:view'],
+            auth: [permissionCodes.admin.workflow.read],
           },
         },
       ],

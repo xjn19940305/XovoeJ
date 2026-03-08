@@ -6,16 +6,24 @@ declare namespace Api {
       userId?: string
       userName?: string
       totalAmount: number
-      status: number // 0-待付款 1-待发货 2-待收货 3-已完成 4-已取消
+      status: number
       statusText?: string
       receiverName?: string
       receiverPhone?: string
       receiverAddress?: string
       remark?: string
+      needInvoice?: boolean
+      invoiceType?: number
+      invoiceTitle?: string
+      invoiceTaxNo?: string
+      invoiceEmail?: string
       createdAt?: string
       updatedAt?: string
       paidAt?: string
       shippedAt?: string
+      shippingCompany?: string
+      trackingNo?: string
+      shippingRemark?: string
       completedAt?: string
     }
 
@@ -52,6 +60,12 @@ declare namespace Api {
     interface UpdateOrderRequest {
       status?: number
       remark?: string
+    }
+
+    interface ShipOrderRequest {
+      shippingCompany: string
+      trackingNo: string
+      shippingRemark?: string
     }
   }
 }

@@ -30,6 +30,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <returns>购物车信息</returns>
         [HttpGet("api/cart")]
+        [HttpGet("api/mall/cart")]
         public async Task<IActionResult> GetCart()
         {
             try
@@ -55,6 +56,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <returns>商品数量</returns>
         [HttpGet("api/cart/count")]
+        [HttpGet("api/mall/cart/count")]
         public async Task<IActionResult> GetCartCount()
         {
             try
@@ -81,6 +83,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="request">添加请求</param>
         /// <returns></returns>
         [HttpPost("api/cart")]
+        [HttpPost("api/mall/cart")]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartRequestDto request)
         {
             try
@@ -112,6 +115,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="request">更新请求</param>
         /// <returns></returns>
         [HttpPut("api/cart/{cartItemId}")]
+        [HttpPut("api/mall/cart/{cartItemId}")]
         public async Task<IActionResult> UpdateQuantity(string cartItemId, [FromBody] UpdateCartQuantityRequestDto request)
         {
             try
@@ -142,6 +146,7 @@ namespace XovoeJ.Api.Managements
         /// <param name="cartItemId">购物车项ID</param>
         /// <returns></returns>
         [HttpDelete("api/cart/{cartItemId}")]
+        [HttpDelete("api/mall/cart/{cartItemId}")]
         public async Task<IActionResult> RemoveFromCart(string cartItemId)
         {
             try
@@ -171,6 +176,7 @@ namespace XovoeJ.Api.Managements
         /// </summary>
         /// <returns></returns>
         [HttpDelete("api/cart")]
+        [HttpDelete("api/mall/cart")]
         public async Task<IActionResult> ClearCart()
         {
             try

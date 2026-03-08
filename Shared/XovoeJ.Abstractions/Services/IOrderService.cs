@@ -76,7 +76,15 @@ namespace XovoeJ.Abstractions.Services
         /// </summary>
         /// <param name="orderId">订单ID</param>
         /// <returns></returns>
-        Task<bool> ShipOrderAsync(string orderId);
+        Task<bool> ShipOrderAsync(string orderId, ShipOrderRequestDto request);
+
+        /// <summary>
+        /// 获取订单物流信息
+        /// </summary>
+        /// <param name="userId">用户ID</param>
+        /// <param name="orderId">订单ID</param>
+        /// <returns></returns>
+        Task<OrderTrackingDto?> GetOrderTrackingAsync(string userId, string orderId);
 
         /// <summary>
         /// 完成订单

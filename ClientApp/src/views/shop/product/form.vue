@@ -1,16 +1,16 @@
 <script setup lang="ts">
+import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 import type { FormInstance, FormRules } from 'element-plus'
+import { createEditor, createToolbar } from '@wangeditor/editor'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import '@wangeditor/editor/dist/css/style.css'
-import { createEditor, createToolbar } from '@wangeditor/editor'
-import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
-import productApi from '@/api/modules/product'
 import categoryApi from '@/api/modules/category'
+import productApi from '@/api/modules/product'
 import FormSection from '@/ui/components/FormSection/index.vue'
 import ProductAttributes from './components/ProductAttributes.vue'
 import ProductImageUpload from './components/ProductImageUpload.vue'
 import SkuManager from './components/SkuManager.vue'
+import '@wangeditor/editor/dist/css/style.css'
 
 defineOptions({
   name: 'ShopProductForm',
@@ -61,6 +61,12 @@ interface SkuItem {
   image?: string
 }
 
+interface CategoryTreeOption {
+  value: string
+  label: string
+  children?: CategoryTreeOption[]
+}
+
 const skuList = ref<SkuItem[]>([])
 
 // 分类树数据
@@ -97,15 +103,16 @@ async function customUploadImage(file: File, insertFn: (url: string, alt: string
       ElMessage.error(uploadResult.message || '上传失败')
     }
   }
-  catch (error) {
+  catch {
     ElMessage.error('上传失败')
   }
 }
 
 // 编辑器销毁
 onBeforeUnmount(() => {
-  if (editor == null)
+  if (editor == null) {
     return
+  }
   editor.destroy()
   if (toolbar) {
     toolbar.destroy()
@@ -126,6 +133,7 @@ onMounted(async () => {
     // 先创建编辑器
     editor = createEditor({
       selector: editorRef.value,
+      // eslint-disable-next-line ts/no-use-before-define
       html: formData.value.detail || '',
       config: editorConfig,
       mode: 'default',
@@ -142,6 +150,7 @@ onMounted(async () => {
     // 监听内容变化更新表单数据
     editor.on('change', () => {
       if (editor) {
+        // eslint-disable-next-line ts/no-use-before-define
         formData.value.detail = editor.getHtml()
       }
     })
@@ -182,7 +191,7 @@ const formData = ref<{
 
 // 分类树选项
 const categoryTreeOptions = computed(() => {
-  function buildTree(items: Api.Category.CategoryTreeNode[]) {
+  function buildTree(items: Api.Category.CategoryTreeNode[]): CategoryTreeOption[] {
     return items.map(item => ({
       value: item.id,
       label: item.name,
@@ -216,10 +225,11 @@ async function getCategoryTree() {
 }
 
 // 将完整 URL 转换为相对路径
+/* eslint-disable style/max-statements-per-line */
 function convertToRelativePath(url: string | undefined): string | undefined {
-  if (!url) return undefined
+  if (!url) { return undefined }
   // 如果已经是相对路径（不以 http 开头），直接返回
-  if (!url.startsWith('http')) return url
+  if (!url.startsWith('http')) { return url }
 
   const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
   const proxyPrefix = `${baseURL}/api/files/proxy?key=`
@@ -237,7 +247,7 @@ function convertToRelativePath(url: string | undefined): string | undefined {
 
 // 处理富文本内容中的图片 URL，转换为完整 URL（用于编辑器显示）
 function convertDetailContentForDisplay(content: string): string {
-  if (!content) return content
+  if (!content) { return content }
 
   const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
   const proxyPrefix = `${baseURL}/api/files/proxy?key=`
@@ -257,21 +267,21 @@ function convertDetailContentForDisplay(content: string): string {
 
 // 处理富文本内容中的图片 URL，转换为相对路径（用于提交）
 function processDetailContent(content: string): string {
-  if (!content) return content
+  if (!content) { return content }
 
   const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
   const proxyPrefix = `${baseURL}/api/files/proxy?key=`
 
   // 替换所有代理图片 URL 为相对路径
-  return content.replace(new RegExp(`${proxyPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^"&'\\s>]+)`, 'g'), (match, key) => {
+  return content.replace(new RegExp(`${proxyPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^"&'\\s>]+)`, 'g'), (_match, key) => {
     return decodeURIComponent(key)
   })
 }
 
 // 获取商品详情
+/* eslint-disable no-console */
 async function getProductDetail() {
-  if (!productId.value)
-    return
+  if (!productId.value) { return }
   loading.value = true
   try {
     const res = await productApi.getDetail(productId.value)
@@ -287,7 +297,7 @@ async function getProductDetail() {
       allImages.push(converted || data.mainImage)
     }
     if (data.images?.length) {
-      allImages.push(...data.images.map(img => {
+      allImages.push(...data.images.map((img) => {
         const converted = convertToRelativePath(img)
         console.log('image 原值:', img, '转换后:', converted)
         return converted || img
@@ -321,7 +331,7 @@ async function getProductDetail() {
     }
 
     // 解析 SKU 数据到列表（供 SkuManager 使用）
-    skuList.value = data.skus.map(sku => {
+    skuList.value = data.skus.map((sku) => {
       let specs: Record<string, string> = {}
       if (typeof sku.specs === 'string') {
         try {
@@ -412,6 +422,7 @@ async function handleSubmit() {
         mainImage: mainImage || undefined,
         images,
         detail: detail || undefined,
+        tags: formData.value.tags,
         isEnabled: formData.value.isEnabled,
         isHot: formData.value.isHot,
         isNew: formData.value.isNew,
@@ -431,6 +442,7 @@ async function handleSubmit() {
         mainImage,
         images,
         detail,
+        tags: formData.value.tags,
         isHot: formData.value.isHot,
         isNew: formData.value.isNew,
         isRecommend: formData.value.isRecommend,
@@ -447,6 +459,8 @@ async function handleSubmit() {
 }
 
 // 取消
+/* eslint-enable no-console */
+/* eslint-enable style/max-statements-per-line */
 function handleCancel() {
   router.back()
 }
@@ -465,7 +479,9 @@ function handleCancel() {
               <h2 class="form-title">
                 {{ pageTitle }}
               </h2>
-              <p class="form-subtitle">填写商品信息并设置规格库存</p>
+              <p class="form-subtitle">
+                填写商品信息并设置规格库存
+              </p>
             </div>
           </div>
         </div>
@@ -520,10 +536,10 @@ function handleCancel() {
 
           <el-form-item label="商品属性">
             <ProductAttributes
-              v-model:isHot="formData.isHot"
-              v-model:isNew="formData.isNew"
-              v-model:isRecommend="formData.isRecommend"
-              v-model:isEnabled="formData.isEnabled"
+              v-model:is-hot="formData.isHot"
+              v-model:is-new="formData.isNew"
+              v-model:is-recommend="formData.isRecommend"
+              v-model:is-enabled="formData.isEnabled"
             />
           </el-form-item>
         </FormSection>
@@ -547,8 +563,8 @@ function handleCancel() {
         <!-- 商品详情 -->
         <FormSection title="商品详情" icon="i-heroicons-solid:document-text">
           <div class="editor-wrapper">
-            <div ref="toolbarRef" class="editor-toolbar"></div>
-            <div ref="editorRef" class="editor-content"></div>
+            <div ref="toolbarRef" class="editor-toolbar" />
+            <div ref="editorRef" class="editor-content" />
           </div>
         </FormSection>
       </el-form>

@@ -1,12 +1,41 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
+import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dictionaryApi from '@/api/modules/dictionary'
-import dayjs from 'dayjs'
 
 defineOptions({
   name: 'ContentDict',
 })
+
+interface GroupFormData {
+  code?: string
+  name: string
+  description?: string
+  type?: Api.Dictionary.DictionaryType
+  parentId?: string
+  icon?: string
+  sortOrder: number
+  isEnabled: boolean
+  remark?: string
+}
+
+interface ItemFormData {
+  groupId?: string
+  key: string
+  name: string
+  value?: string
+  dataType: Api.Dictionary.DictionaryDataType
+  defaultValue?: string
+  placeholder?: string
+  description?: string
+  options?: string
+  validation?: string
+  isRequired: boolean
+  isEnabled: boolean
+  sortOrder: number
+  remark?: string
+}
 
 // 字典类型选项
 const dictionaryTypeOptions = [
@@ -30,7 +59,6 @@ const searchForm = ref({
 // 分组树数据
 const groupTreeData = ref<Api.Dictionary.DictionaryGroupTree[]>([])
 const groupLoading = ref(false)
-const groupTreeRef = ref()
 
 // 当前选中的分组
 const selectedGroupId = ref<string>()
@@ -45,7 +73,7 @@ const groupDialogVisible = ref(false)
 const groupDialogTitle = ref('创建分组')
 const groupDialogLoading = ref(false)
 const groupFormRef = ref<FormInstance>()
-const groupFormData = ref<Api.Dictionary.CreateDictionaryGroupRequest | Api.Dictionary.UpdateDictionaryGroupRequest>({
+const groupFormData = ref<GroupFormData>({
   code: '',
   name: '',
   sortOrder: 0,
@@ -59,7 +87,7 @@ const itemDialogVisible = ref(false)
 const itemDialogTitle = ref('创建字典项')
 const itemDialogLoading = ref(false)
 const itemFormRef = ref<FormInstance>()
-const itemFormData = ref<Api.Dictionary.CreateDictionaryItemRequest | Api.Dictionary.UpdateDictionaryItemRequest>({
+const itemFormData = ref<ItemFormData>({
   groupId: '',
   key: '',
   name: '',
@@ -74,7 +102,7 @@ const editingItemId = ref<string>()
 const groupRules: FormRules = {
   code: [
     { required: true, message: '请输入分组编码', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '分组编码只能包含字母、数字、下划线和连字符', trigger: 'blur' },
+    { pattern: /^[\w-]+$/, message: '分组编码只能包含字母、数字、下划线和连字符', trigger: 'blur' },
   ],
   name: [
     { required: true, message: '请输入分组名称', trigger: 'blur' },
@@ -86,7 +114,7 @@ const groupRules: FormRules = {
 const itemRules: FormRules = {
   key: [
     { required: true, message: '请输入配置键', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_.-]+$/, message: '配置键只能包含字母、数字、下划线、点和连字符', trigger: 'blur' },
+    { pattern: /^[\w.-]+$/, message: '配置键只能包含字母、数字、下划线、点和连字符', trigger: 'blur' },
   ],
   name: [
     { required: true, message: '请输入配置名称', trigger: 'blur' },
@@ -101,7 +129,7 @@ async function getGroupTree() {
     const res = await dictionaryApi.getGroupTree(searchForm.value.type)
     groupTreeData.value = res.data
     // 如果有选中的分组，清空选择
-    if (selectedGroupId.value && !res.data.find(g => findGroupById(res.data, selectedGroupId.value!))) {
+    if (selectedGroupId.value && !findGroupById(res.data, selectedGroupId.value)) {
       selectedGroupId.value = undefined
       selectedGroup.value = undefined
       itemList.value = []
@@ -115,12 +143,14 @@ async function getGroupTree() {
 // 递归查找分组
 function findGroupById(groups: Api.Dictionary.DictionaryGroupTree[], id: string): Api.Dictionary.DictionaryGroupTree | undefined {
   for (const group of groups) {
-    if (group.id === id)
+    if (group.id === id) {
       return group
+    }
     if (group.children?.length) {
       const found = findGroupById(group.children, id)
-      if (found)
+      if (found) {
         return found
+      }
     }
   }
   return undefined
@@ -159,6 +189,7 @@ function handleReset() {
 
 // 选择分组
 function handleGroupSelect(data: any, node: any) {
+  // eslint-disable-next-line no-console
   console.log('节点点击:', data, node)
   selectedGroupId.value = data.id
   selectedGroup.value = data
@@ -176,15 +207,6 @@ function formatDataType(dataType: Api.Dictionary.DictionaryDataType): string {
   return map[dataType] || '未知'
 }
 
-// 格式化字典类型
-function formatDictionaryType(type: Api.Dictionary.DictionaryType): string {
-  const map = {
-    0: '系统配置',
-    1: '业务字典',
-  }
-  return map[type] || '未知'
-}
-
 // ========== 分组操作 ==========
 
 // 打开创建分组对话框
@@ -199,37 +221,6 @@ function handleCreateGroup() {
     type: searchForm.value.type ?? 0,
   }
   groupDialogVisible.value = true
-}
-
-// 打开编辑分组对话框
-function handleEditGroup(group: Api.Dictionary.DictionaryGroupTree) {
-  groupDialogTitle.value = '编辑分组'
-  editingGroupId.value = group.id
-  groupFormData.value = {
-    name: group.name,
-    description: group.description,
-    icon: group.icon,
-    sortOrder: group.sortOrder,
-    isEnabled: group.isEnabled,
-    type: group.type,
-  }
-  groupDialogVisible.value = true
-}
-
-// 删除分组
-async function handleDeleteGroup(group: Api.Dictionary.DictionaryGroupTree) {
-  const hasChildren = group.children?.length > 0
-  const hasItems = group.items?.length > 0
-
-  let message = '确定要删除该分组吗？'
-  if (hasChildren || hasItems) {
-    message = `该分组${hasChildren ? '包含子分组' : ''}${hasItems ? '包含字典项' : ''}，删除后相关数据也会被删除，确定要删除吗？`
-  }
-
-  await ElMessageBox.confirm(message, '提示', { type: 'warning' })
-  await dictionaryApi.deleteGroup(group.id)
-  ElMessage.success('删除成功')
-  getGroupTree()
 }
 
 // 提交分组表单
@@ -397,7 +388,6 @@ onMounted(() => {
             </div>
           </template>
           <el-tree
-            ref="groupTreeRef"
             v-loading="groupLoading"
             :data="groupTreeData"
             node-key="id"
@@ -410,7 +400,7 @@ onMounted(() => {
       </div>
 
       <!-- 右侧字典项列表 -->
-      <div class="flex-1 min-w-0">
+      <div class="min-w-0 flex-1">
         <FaCard>
           <template #header>
             <div class="flex items-center justify-between">
@@ -435,7 +425,9 @@ onMounted(() => {
             <el-table-column prop="name" label="配置名称" min-width="150" show-overflow-tooltip />
             <el-table-column label="数据类型" width="100">
               <template #default="{ row }">
-                <el-tag size="small">{{ formatDataType(row.dataType) }}</el-tag>
+                <el-tag size="small">
+                  {{ formatDataType(row.dataType) }}
+                </el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="value" label="配置值" min-width="150" show-overflow-tooltip />
@@ -471,7 +463,7 @@ onMounted(() => {
           </el-table>
 
           <div v-if="!selectedGroupId" class="flex flex-col items-center justify-center py-20 text-gray-400">
-            <FaIcon name="i-heroicons-solid:arrow-left" class="size-12 mb-2" />
+            <FaIcon name="i-heroicons-solid:arrow-left" class="mb-2 size-12" />
             <p>请从左侧选择一个分组查看字典项</p>
           </div>
         </FaCard>
@@ -500,8 +492,12 @@ onMounted(() => {
         </el-form-item>
         <el-form-item v-if="!editingGroupId" label="字典类型" prop="type">
           <el-radio-group v-model="groupFormData.type">
-            <el-radio :value="0">系统配置</el-radio>
-            <el-radio :value="1">业务字典</el-radio>
+            <el-radio :value="0">
+              系统配置
+            </el-radio>
+            <el-radio :value="1">
+              业务字典
+            </el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="图标">
@@ -521,8 +517,12 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="groupDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="groupDialogLoading" @click="handleGroupSubmit">确定</el-button>
+        <el-button @click="groupDialogVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" :loading="groupDialogLoading" @click="handleGroupSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
 
@@ -585,8 +585,12 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="itemDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="itemDialogLoading" @click="handleItemSubmit">确定</el-button>
+        <el-button @click="itemDialogVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" :loading="itemDialogLoading" @click="handleItemSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
   </div>

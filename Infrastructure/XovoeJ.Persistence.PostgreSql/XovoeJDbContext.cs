@@ -11,14 +11,27 @@ namespace XovoeJ.Persistence.PostgreSql
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductSku> ProductSkus { get; set; }
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
+        public DbSet<UserAddress> UserAddresses { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<AfterSaleOrder> AfterSaleOrders { get; set; }
         public DbSet<DictionaryGroup> DictionaryGroups { get; set; }
         public DbSet<DictionaryItem> DictionaryItems { get; set; }
         public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
         public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
         public DbSet<WorkflowPendingItem> WorkflowPendingItems { get; set; }
         public DbSet<WorkflowApprovalRecord> WorkflowApprovalRecords { get; set; }
+        public DbSet<MessageTemplate> MessageTemplates { get; set; }
+        public DbSet<MessageTask> MessageTasks { get; set; }
+        public DbSet<MessageSendRecord> MessageSendRecords { get; set; }
+        public DbSet<InviteRelation> InviteRelations { get; set; }
+        public DbSet<ReferralLink> ReferralLinks { get; set; }
+        public DbSet<CommissionRecord> CommissionRecords { get; set; }
+        public DbSet<CouponTemplate> CouponTemplates { get; set; }
+        public DbSet<PromotionActivity> PromotionActivities { get; set; }
+        public DbSet<SeckillActivity> SeckillActivities { get; set; }
+        public DbSet<GroupBuyActivity> GroupBuyActivities { get; set; }
+        public DbSet<BargainActivity> BargainActivities { get; set; }
 
         public XovoeJDbContext(DbContextOptions options) : base(options)
         {
@@ -75,6 +88,14 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(c => new { c.UserId, c.SkuId }).IsUnique();
             });
 
+            modelBuilder.Entity<UserAddress>(build =>
+            {
+                build.HasIndex(a => a.UserId);
+                build.HasIndex(a => new { a.UserId, a.IsDefault });
+                build.HasIndex(a => a.RegionCode);
+                build.HasIndex(a => a.CreatedAt);
+            });
+
             // Order 配置
             modelBuilder.Entity<Order>(build =>
             {
@@ -91,6 +112,17 @@ namespace XovoeJ.Persistence.PostgreSql
             {
                 build.HasIndex(o => o.OrderId);
                 build.HasIndex(o => o.ProductId);
+            });
+
+            modelBuilder.Entity<AfterSaleOrder>(build =>
+            {
+                build.HasIndex(a => a.AfterSaleNo).IsUnique();
+                build.HasIndex(a => a.OrderId);
+                build.HasIndex(a => a.OrderNo);
+                build.HasIndex(a => a.UserId);
+                build.HasIndex(a => a.Status);
+                build.HasIndex(a => a.Type);
+                build.HasIndex(a => a.CreatedAt);
             });
 
             // DictionaryGroup 配置
@@ -143,6 +175,111 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(r => r.StepId);
                 build.HasIndex(r => r.ApproverId);
                 build.HasIndex(r => r.ActionTime);
+            });
+
+            modelBuilder.Entity<MessageTemplate>(build =>
+            {
+                build.HasIndex(t => t.Code).IsUnique();
+                build.HasIndex(t => t.Channel);
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.CreatedAt);
+            });
+
+            modelBuilder.Entity<MessageTask>(build =>
+            {
+                build.HasIndex(t => t.TemplateId);
+                build.HasIndex(t => t.Channel);
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.CreatedAt);
+                build.HasIndex(t => t.ScheduledAt);
+            });
+
+            modelBuilder.Entity<MessageSendRecord>(build =>
+            {
+                build.HasIndex(r => r.TemplateId);
+                build.HasIndex(r => r.TaskId);
+                build.HasIndex(r => r.Channel);
+                build.HasIndex(r => r.Status);
+                build.HasIndex(r => r.TraceId);
+                build.HasIndex(r => r.CreatedAt);
+                build.HasIndex(r => r.SentAt);
+            });
+
+            modelBuilder.Entity<InviteRelation>(build =>
+            {
+                build.HasIndex(r => r.InviterId);
+                build.HasIndex(r => r.InviteeId);
+                build.HasIndex(r => r.ReferralCode);
+                build.HasIndex(r => r.Channel);
+                build.HasIndex(r => r.Status);
+                build.HasIndex(r => r.CreatedAt);
+            });
+
+            modelBuilder.Entity<ReferralLink>(build =>
+            {
+                build.HasIndex(r => r.Code).IsUnique();
+                build.HasIndex(r => r.OwnerId);
+                build.HasIndex(r => r.Channel);
+                build.HasIndex(r => r.Status);
+                build.HasIndex(r => r.CampaignName);
+                build.HasIndex(r => r.CreatedAt);
+                build.HasIndex(r => r.ExpireAt);
+            });
+
+            modelBuilder.Entity<CommissionRecord>(build =>
+            {
+                build.HasIndex(r => r.PromoterId);
+                build.HasIndex(r => r.OrderNo);
+                build.HasIndex(r => r.Status);
+                build.HasIndex(r => r.CreatedAt);
+                build.HasIndex(r => r.SettledAt);
+            });
+
+            modelBuilder.Entity<CouponTemplate>(build =>
+            {
+                build.HasIndex(t => t.Code).IsUnique();
+                build.HasIndex(t => t.CouponType);
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.CreatedAt);
+                build.HasIndex(t => t.StartTime);
+                build.HasIndex(t => t.EndTime);
+            });
+
+            modelBuilder.Entity<PromotionActivity>(build =>
+            {
+                build.HasIndex(t => t.Type);
+                build.HasIndex(t => t.Priority);
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.CreatedAt);
+                build.HasIndex(t => t.StartTime);
+                build.HasIndex(t => t.EndTime);
+            });
+
+            modelBuilder.Entity<SeckillActivity>(build =>
+            {
+                build.HasIndex(t => t.Code).IsUnique();
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.StartTime);
+                build.HasIndex(t => t.EndTime);
+                build.HasIndex(t => t.CreatedAt);
+            });
+
+            modelBuilder.Entity<GroupBuyActivity>(build =>
+            {
+                build.HasIndex(t => t.Code).IsUnique();
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.StartTime);
+                build.HasIndex(t => t.EndTime);
+                build.HasIndex(t => t.CreatedAt);
+            });
+
+            modelBuilder.Entity<BargainActivity>(build =>
+            {
+                build.HasIndex(t => t.Code).IsUnique();
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.StartTime);
+                build.HasIndex(t => t.EndTime);
+                build.HasIndex(t => t.CreatedAt);
             });
         }
     }

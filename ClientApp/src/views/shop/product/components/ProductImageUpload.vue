@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadRequestOptions } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { ref, watch } from 'vue'
 
 interface Props {
   modelValue: string[]
@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<Props>(), {
   maxSize: 5,
   maxCount: 10,
   limit: 10,
-  disabled: false
+  disabled: false,
 })
 
 const emit = defineEmits<{
@@ -60,13 +60,16 @@ watch(() => props.modelValue, (newVal) => {
       url: getFullUrl(path), // 使用完整 URL 显示
       path, // 保存原始路径
       uid: Date.now() + index,
-      status: 'success'
+      status: 'success',
     } as UploadFile))
   }
 }, { immediate: true })
 
-// 获取第一个图片作为主图
-const mainImage = computed(() => props.modelValue[0] || '')
+type UploadError = Parameters<NonNullable<UploadRequestOptions['onError']>>[0]
+
+function toUploadError(error: unknown): UploadError {
+  return error as UploadError
+}
 
 function beforeUpload(file: File) {
   const isImage = file.type.startsWith('image/')
@@ -82,6 +85,7 @@ function beforeUpload(file: File) {
   return true
 }
 
+/* eslint-disable no-console */
 async function handleUpload(options: UploadRequestOptions) {
   const { file, onSuccess, onError } = options
 
@@ -113,19 +117,23 @@ async function handleUpload(options: UploadRequestOptions) {
         emit('update:modelValue', newUrls)
         emit('change', newUrls)
         onSuccess(fullUrl) // el-upload 使用完整 URL 显示
-      } else {
-        ElMessage.warning(`最多只能上传${props.maxCount}张图片`)
-        onError(new Error('超过最大数量'))
       }
-    } else {
-      ElMessage.error(result.message || '上传失败')
-      onError(new Error(result.message || '上传失败'))
+      else {
+        ElMessage.warning(`最多只能上传${props.maxCount}张图片`)
+        onError(toUploadError(new Error('超过最大数量')))
+      }
     }
-  } catch (error) {
+    else {
+      ElMessage.error(result.message || '上传失败')
+      onError(toUploadError(new Error(result.message || '上传失败')))
+    }
+  }
+  catch (error) {
     ElMessage.error('上传失败')
-    onError(error as Error)
+    onError(toUploadError(error))
   }
 }
+/* eslint-enable no-console */
 
 function handleRemove(file: UploadFile) {
   const index = fileList.value.findIndex(f => f.uid === file.uid)
@@ -143,10 +151,11 @@ function handlePreview(file: UploadFile) {
 }
 
 // 将完整 URL 转换为相对路径
+/* eslint-disable style/max-statements-per-line */
 function convertToRelativePath(url: string | undefined): string | undefined {
-  if (!url) return undefined
+  if (!url) { return undefined }
   // 如果已经是相对路径（不以 http 开头），直接返回
-  if (!url.startsWith('http')) return url
+  if (!url.startsWith('http')) { return url }
 
   const baseURL = import.meta.env.VITE_APP_API_BASEURL || 'https://localhost:7216'
   const proxyPrefix = `${baseURL}/api/files/proxy?key=`
@@ -161,8 +170,9 @@ function convertToRelativePath(url: string | undefined): string | undefined {
   }
   return url
 }
+/* eslint-enable style/max-statements-per-line */
 
-function handleChange(file: UploadFile, fileList: UploadFile[]) {
+function handleChange(_file: UploadFile, fileList: UploadFile[]) {
   // 当 el-upload 内部变化时，同步更新我们的 fileList
   // 同时更新 modelValue（需要转换为相对路径）
   isInternalUpdate.value = true

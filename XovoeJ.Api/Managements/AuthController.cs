@@ -12,6 +12,7 @@ namespace XovoeJ.Api.Managements
     /// 认证控制器
     /// </summary>
     [ApiController]
+    [Route("api/admin/auth")]
     [Route("api/auth")]
     [Produces("application/json")]
     [ApiGroup(ApiGroupNames.MANAGEMENT)]

@@ -56,6 +56,7 @@ declare module 'vue' {
     FaToast: typeof import('./../ui/components/FaToast/index.vue')['default']
     FaTooltip: typeof import('./../ui/components/FaTooltip/index.vue')['default']
     FormSection: typeof import('./../ui/components/FormSection/index.vue')['default']
+    PlannedDomainBoard: typeof import('./../ui/components/PlannedDomainBoard/index.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
@@ -107,6 +108,7 @@ declare global {
   const FaToast: typeof import('./../ui/components/FaToast/index.vue')['default']
   const FaTooltip: typeof import('./../ui/components/FaTooltip/index.vue')['default']
   const FormSection: typeof import('./../ui/components/FormSection/index.vue')['default']
+  const PlannedDomainBoard: typeof import('./../ui/components/PlannedDomainBoard/index.vue')['default']
   const RouterLink: typeof import('vue-router')['RouterLink']
   const RouterView: typeof import('vue-router')['RouterView']
 }

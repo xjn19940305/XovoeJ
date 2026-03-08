@@ -5,8 +5,8 @@ meta:
 </route>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
 import dashboardApi from '@/api/modules/dashboard'
+import { permissionCodes } from '@/utils/permission'
 
 defineOptions({
   name: 'Dashboard',
@@ -85,20 +85,22 @@ const userStats = ref({
 
 // 快捷操作
 const quickActions = [
-  { title: '创建订单', icon: 'i-heroicons-solid:document-plus', route: '/shop/order/create', color: 'from-blue-500 to-blue-600', auth: ['shop:order:create'] },
-  { title: '添加商品', icon: 'i-heroicons-solid:plus-circle', route: '/shop/product/create', color: 'from-emerald-500 to-emerald-600', auth: ['shop:product:create'] },
-  { title: '用户管理', icon: 'i-heroicons-solid:users', route: '/system/user', color: 'from-violet-500 to-violet-600', auth: ['system:user:view'] },
-  { title: '角色管理', icon: 'i-heroicons-solid:shield-check', route: '/system/role', color: 'from-orange-500 to-orange-600', auth: ['system:role:view'] },
+  { title: '创建订单', icon: 'i-heroicons-solid:document-plus', route: '/shop/order/create', color: 'from-blue-500 to-blue-600', auth: [permissionCodes.admin.order.create] },
+  { title: '添加商品', icon: 'i-heroicons-solid:plus-circle', route: '/shop/product/create', color: 'from-emerald-500 to-emerald-600', auth: [permissionCodes.admin.product.create] },
+  { title: '用户管理', icon: 'i-heroicons-solid:users', route: '/system/user', color: 'from-violet-500 to-violet-600', auth: [permissionCodes.admin.user.read] },
+  { title: '角色管理', icon: 'i-heroicons-solid:shield-check', route: '/system/role', color: 'from-orange-500 to-orange-600', auth: [permissionCodes.admin.role.read] },
 ]
 
 const userStore = useUserStore()
+const { auth } = useAuth()
 
 // 过滤有权限的快捷操作
 const filteredQuickActions = computed(() => {
-  return quickActions.filter(action => {
-    if (!action.auth || action.auth.length === 0)
+  return quickActions.filter((action) => {
+    if (!action.auth || action.auth.length === 0) {
       return true
-    return action.auth.some(permission => userStore.permissions.includes(permission))
+    }
+    return auth(action.auth)
   })
 })
 
@@ -143,7 +145,7 @@ async function getStatsData() {
       total: data.totalProducts || 0,
       onSale: data.onSaleProducts || 0,
       outOfStock: data.outOfStockProducts || 0,
-      lowStock: data.lowStockProducts || 0,
+      lowStock: 0,
       loading: false,
     }
 
@@ -156,9 +158,9 @@ async function getStatsData() {
       loading: false,
     }
   }
-  catch (error) {
+  catch {
     // 使用模拟数据
-    statsCards.value.forEach(card => {
+    statsCards.value.forEach((card) => {
       card.loading = false
     })
     orderStats.value.loading = false
@@ -186,7 +188,7 @@ async function getRecentOrders() {
 }
 
 // 订单状态配置
-const orderStatusConfig: Record<number, { label: string; color: string; bgColor: string; icon: string }> = {
+const orderStatusConfig: Record<number, { label: string, color: string, bgColor: string, icon: string }> = {
   0: { label: '待付款', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: 'i-heroicons-solid:clock' },
   1: { label: '待发货', color: 'text-blue-600', bgColor: 'bg-blue-50', icon: 'i-heroicons-solid:cube' },
   2: { label: '待收货', color: 'text-violet-600', bgColor: 'bg-violet-50', icon: 'i-heroicons-solid:truck' },
@@ -200,22 +202,18 @@ function formatAmount(amount: number) {
 }
 
 // 获取问候语
+/* eslint-disable style/max-statements-per-line */
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 6)
-    return '凌晨好'
-  if (hour < 9)
-    return '早上好'
-  if (hour < 12)
-    return '上午好'
-  if (hour < 14)
-    return '中午好'
-  if (hour < 18)
-    return '下午好'
-  if (hour < 22)
-    return '晚上好'
+  if (hour < 6) { return '凌晨好' }
+  if (hour < 9) { return '早上好' }
+  if (hour < 12) { return '上午好' }
+  if (hour < 14) { return '中午好' }
+  if (hour < 18) { return '下午好' }
+  if (hour < 22) { return '晚上好' }
   return '夜深了'
 })
+/* eslint-enable style/max-statements-per-line */
 
 // 获取星期几
 const weekDay = computed(() => {
@@ -245,7 +243,9 @@ onMounted(() => {
             {{ greeting }}，{{ userStore.nickName || userStore.userName }}
             <span class="welcome-emoji">👋</span>
           </h1>
-          <p class="welcome-subtitle">欢迎回来，开始您今天的工作吧！</p>
+          <p class="welcome-subtitle">
+            欢迎回来，开始您今天的工作吧！
+          </p>
         </div>
         <div class="welcome-date">
           <div class="date-item">
@@ -270,7 +270,7 @@ onMounted(() => {
       <div
         v-for="(card, index) in statsCards"
         :key="index"
-        :class="['stat-card', `gradient-${index}`]"
+        class="stat-card" :class="[`gradient-${index}`]"
       >
         <div class="stat-card-bg" :class="card.gradient" />
         <div class="stat-card-content">
@@ -278,7 +278,9 @@ onMounted(() => {
             <FaIcon :name="card.icon" class="size-7" />
           </div>
           <div class="stat-info">
-            <p class="stat-label">{{ card.title }}</p>
+            <p class="stat-label">
+              {{ card.title }}
+            </p>
             <p class="stat-value">
               <span v-if="card.loading" class="stat-skeleton">--</span>
               <span v-else class="stat-number">
@@ -311,15 +313,17 @@ onMounted(() => {
           <div v-loading="orderStats.loading" class="order-stats-grid">
             <div v-for="(value, key) in orderStats" :key="key" class="order-stat-item" :class="`stat-${key}`">
               <div v-if="key !== 'loading'" class="order-stat-content">
-                <div class="order-stat-value">{{ value }}</div>
+                <div class="order-stat-value">
+                  {{ value }}
+                </div>
                 <div class="order-stat-label">
                   {{
                     key === 'total' ? '总订单'
-                      : key === 'pendingPayment' ? '待付款'
-                        : key === 'pendingShipment' ? '待发货'
-                          : key === 'shipped' ? '已发货'
-                            : key === 'completed' ? '已完成'
-                              : '已取消'
+                    : key === 'pendingPayment' ? '待付款'
+                      : key === 'pendingShipment' ? '待发货'
+                        : key === 'shipped' ? '已发货'
+                          : key === 'completed' ? '已完成'
+                            : '已取消'
                   }}
                 </div>
               </div>
@@ -345,8 +349,12 @@ onMounted(() => {
                 <FaIcon name="i-heroicons-solid:user-group" class="size-6" />
               </div>
               <div class="user-stat-info">
-                <div class="user-stat-value">{{ userStats.total }}</div>
-                <div class="user-stat-label">总用户数</div>
+                <div class="user-stat-value">
+                  {{ userStats.total }}
+                </div>
+                <div class="user-stat-label">
+                  总用户数
+                </div>
               </div>
             </div>
             <div class="user-stat-card success">
@@ -354,8 +362,12 @@ onMounted(() => {
                 <FaIcon name="i-heroicons-solid:sun" class="size-6" />
               </div>
               <div class="user-stat-info">
-                <div class="user-stat-value">{{ userStats.today }}</div>
-                <div class="user-stat-label">今日新增</div>
+                <div class="user-stat-value">
+                  {{ userStats.today }}
+                </div>
+                <div class="user-stat-label">
+                  今日新增
+                </div>
               </div>
             </div>
             <div class="user-stat-card info">
@@ -363,8 +375,12 @@ onMounted(() => {
                 <FaIcon name="i-heroicons-solid:calendar" class="size-6" />
               </div>
               <div class="user-stat-info">
-                <div class="user-stat-value">{{ userStats.thisWeek }}</div>
-                <div class="user-stat-label">本周新增</div>
+                <div class="user-stat-value">
+                  {{ userStats.thisWeek }}
+                </div>
+                <div class="user-stat-label">
+                  本周新增
+                </div>
               </div>
             </div>
             <div class="user-stat-card warning">
@@ -372,8 +388,12 @@ onMounted(() => {
                 <FaIcon name="i-heroicons-solid:calendar-days" class="size-6" />
               </div>
               <div class="user-stat-info">
-                <div class="user-stat-value">{{ userStats.thisMonth }}</div>
-                <div class="user-stat-label">本月新增</div>
+                <div class="user-stat-value">
+                  {{ userStats.thisMonth }}
+                </div>
+                <div class="user-stat-label">
+                  本月新增
+                </div>
               </div>
             </div>
           </div>
@@ -403,18 +423,26 @@ onMounted(() => {
                 class="order-item"
               >
                 <div class="order-item-left">
-                  <div class="order-no">{{ order.orderNo }}</div>
-                  <div class="order-user">{{ order.userName || '未知用户' }}</div>
+                  <div class="order-no">
+                    {{ order.orderNo }}
+                  </div>
+                  <div class="order-user">
+                    {{ order.userName || '未知用户' }}
+                  </div>
                 </div>
                 <div class="order-item-center">
                   <div class="order-status" :class="orderStatusConfig[order.status]?.color">
                     <FaIcon :name="orderStatusConfig[order.status]?.icon" class="size-4" />
                     {{ orderStatusConfig[order.status]?.label }}
                   </div>
-                  <div class="order-time">{{ order.createdAt }}</div>
+                  <div class="order-time">
+                    {{ order.createdAt }}
+                  </div>
                 </div>
                 <div class="order-item-right">
-                  <div class="order-amount">{{ formatAmount(order.totalAmount) }}</div>
+                  <div class="order-amount">
+                    {{ formatAmount(order.totalAmount) }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -443,8 +471,12 @@ onMounted(() => {
                   <FaIcon name="i-heroicons-solid:cube" class="size-5" />
                 </div>
                 <div class="product-stat-info">
-                  <div class="product-stat-value">{{ productStats.total }}</div>
-                  <div class="product-stat-label">商品总数</div>
+                  <div class="product-stat-value">
+                    {{ productStats.total }}
+                  </div>
+                  <div class="product-stat-label">
+                    商品总数
+                  </div>
                 </div>
               </div>
               <div class="product-stat-progress">
@@ -459,13 +491,17 @@ onMounted(() => {
                   <FaIcon name="i-heroicons-solid:check-circle" class="size-5" />
                 </div>
                 <div class="product-stat-info">
-                  <div class="product-stat-value">{{ productStats.onSale }}</div>
-                  <div class="product-stat-label">在售商品</div>
+                  <div class="product-stat-value">
+                    {{ productStats.onSale }}
+                  </div>
+                  <div class="product-stat-label">
+                    在售商品
+                  </div>
                 </div>
               </div>
               <div class="product-stat-progress">
                 <div class="progress-bar">
-                  <div class="progress-fill green" :style="{ width: productStats.total ? (productStats.onSale / productStats.total * 100) + '%' : '0%' }" />
+                  <div class="progress-fill green" :style="{ width: productStats.total ? `${productStats.onSale / productStats.total * 100}%` : '0%' }" />
                 </div>
               </div>
             </div>
@@ -475,13 +511,17 @@ onMounted(() => {
                   <FaIcon name="i-heroicons-solid:exclamation-triangle" class="size-5" />
                 </div>
                 <div class="product-stat-info">
-                  <div class="product-stat-value">{{ productStats.lowStock }}</div>
-                  <div class="product-stat-label">库存预警</div>
+                  <div class="product-stat-value">
+                    {{ productStats.lowStock }}
+                  </div>
+                  <div class="product-stat-label">
+                    库存预警
+                  </div>
                 </div>
               </div>
               <div class="product-stat-progress">
                 <div class="progress-bar">
-                  <div class="progress-fill orange" :style="{ width: productStats.total ? (productStats.lowStock / productStats.total * 100) + '%' : '0%' }" />
+                  <div class="progress-fill orange" :style="{ width: productStats.total ? `${productStats.lowStock / productStats.total * 100}%` : '0%' }" />
                 </div>
               </div>
             </div>
@@ -491,13 +531,17 @@ onMounted(() => {
                   <FaIcon name="i-heroicons-solid:x-circle" class="size-5" />
                 </div>
                 <div class="product-stat-info">
-                  <div class="product-stat-value">{{ productStats.outOfStock }}</div>
-                  <div class="product-stat-label">缺货商品</div>
+                  <div class="product-stat-value">
+                    {{ productStats.outOfStock }}
+                  </div>
+                  <div class="product-stat-label">
+                    缺货商品
+                  </div>
                 </div>
               </div>
               <div class="product-stat-progress">
                 <div class="progress-bar">
-                  <div class="progress-fill red" :style="{ width: productStats.total ? (productStats.outOfStock / productStats.total * 100) + '%' : '0%' }" />
+                  <div class="progress-fill red" :style="{ width: productStats.total ? `${productStats.outOfStock / productStats.total * 100}%` : '0%' }" />
                 </div>
               </div>
             </div>
@@ -516,7 +560,7 @@ onMounted(() => {
             <div
               v-for="action in filteredQuickActions"
               :key="action.title"
-              :class="['quick-action-item', action.color]"
+              class="quick-action-item" :class="[action.color]"
               @click="handleNavigate(action.route)"
             >
               <div class="quick-action-icon">

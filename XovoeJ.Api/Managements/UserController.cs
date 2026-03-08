@@ -10,6 +10,7 @@ namespace XovoeJ.Api.Managements
     /// 用户管理控制器
     /// </summary>
     [ApiController]
+    [Route("api/admin/users")]
     [Route("api/users")]
     [Produces("application/json")]
     [ApiGroup(ApiGroupNames.MANAGEMENT)]

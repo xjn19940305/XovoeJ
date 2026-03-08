@@ -87,6 +87,18 @@ namespace XovoeJ.Entities
         [Column("ship_time")]
         public DateTime? ShipTime { get; set; }
 
+        [MaxLength(64)]
+        [Column("shipping_company")]
+        public string? ShippingCompany { get; set; }
+
+        [MaxLength(64)]
+        [Column("tracking_no")]
+        public string? TrackingNo { get; set; }
+
+        [MaxLength(500)]
+        [Column("shipping_remark")]
+        public string? ShippingRemark { get; set; }
+
         /// <summary>
         /// 收货时间
         /// </summary>
@@ -144,6 +156,24 @@ namespace XovoeJ.Entities
         [MaxLength(1000)]
         [Column("remark")]
         public string? Remark { get; set; }
+
+        [Column("need_invoice")]
+        public bool NeedInvoice { get; set; }
+
+        [Column("invoice_type")]
+        public int? InvoiceType { get; set; }
+
+        [MaxLength(128)]
+        [Column("invoice_title")]
+        public string? InvoiceTitle { get; set; }
+
+        [MaxLength(64)]
+        [Column("invoice_tax_no")]
+        public string? InvoiceTaxNo { get; set; }
+
+        [MaxLength(128)]
+        [Column("invoice_email")]
+        public string? InvoiceEmail { get; set; }
 
         /// <summary>
         /// 创建时间

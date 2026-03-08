@@ -47,13 +47,6 @@ declare namespace Settings {
      * @默认值 `false`
      */
     enableDynamicTitle?: boolean
-    /**
-     * 路由数据来源
-     * @默认值 `'frontend'` 前端
-     * @可选值 `'backend'` 后端
-     * @可选值 `'filesystem'` 文件系统
-     */
-    routeBaseOn?: 'frontend' | 'backend' | 'filesystem'
   }
   interface home {
     /**
@@ -80,12 +73,6 @@ declare namespace Settings {
     enableMobileAdaptation?: boolean
   }
   interface menu {
-    /**
-     * 导航栏数据来源，当 `app.routeBaseOn: 'filesystem'` 时生效
-     * @默认值 `'frontend'` 前端
-     * @可选值 `'backend'` 后端
-     */
-    baseOn?: 'frontend' | 'backend'
     /**
      * 导航栏模式
      * @默认值 `'side'` 侧边栏模式（有主导航）
@@ -281,6 +268,7 @@ declare namespace Menu {
       auth?: string | string[]
       menu?: boolean
       link?: string
+      isGroup?: boolean
     }
     children?: recordRaw[]
   }

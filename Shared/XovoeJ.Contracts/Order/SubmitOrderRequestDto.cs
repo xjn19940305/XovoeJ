@@ -48,6 +48,19 @@ namespace XovoeJ.Contracts.Order
         /// 优惠券ID
         /// </summary>
         public string? CouponId { get; set; }
+
+        public bool NeedInvoice { get; set; }
+
+        public int? InvoiceType { get; set; }
+
+        [MaxLength(128)]
+        public string? InvoiceTitle { get; set; }
+
+        [MaxLength(64)]
+        public string? InvoiceTaxNo { get; set; }
+
+        [MaxLength(128)]
+        public string? InvoiceEmail { get; set; }
     }
 
     /// <summary>

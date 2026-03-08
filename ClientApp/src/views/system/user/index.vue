@@ -1,13 +1,23 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import userApi from '@/api/modules/user-management'
-import roleApi from '@/api/modules/role'
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import roleApi from '@/api/modules/role'
+import userApi from '@/api/modules/user-management'
 
 defineOptions({
   name: 'SystemUser',
 })
+
+interface UserFormData {
+  userName: string
+  password?: string
+  email?: string
+  phoneNumber?: string
+  realName?: string
+  nickName?: string
+  roleIds: string[]
+}
 
 // 搜索表单
 const searchForm = ref({
@@ -24,14 +34,13 @@ const pageSize = ref(20)
 
 // 选中的行
 const selectedRows = ref<Api.User.User[]>([])
-const selectedIds = computed(() => selectedRows.value.map(item => item.id))
 
 // 对话框
 const dialogVisible = ref(false)
 const dialogTitle = ref('创建用户')
 const dialogLoading = ref(false)
 const editingUserId = ref<string>()
-const formData = ref<Api.User.CreateUserRequest>({
+const formData = ref<UserFormData>({
   userName: '',
   password: '',
   email: '',
@@ -199,7 +208,7 @@ async function handleSubmit() {
       })
       // 更新角色分配 - 将角色ID转换为角色名称
       const roleNames = formData.value.roleIds
-        .map(id => roleOptions.value.find(r => r.id === id)?.name)
+        .map((id: string) => roleOptions.value.find(r => r.id === id)?.name)
         .filter((name): name is string => !!name)
       await userApi.assignRoles({
         userId: editingUserId.value,
@@ -211,7 +220,7 @@ async function handleSubmit() {
       // 创建模式 - 先创建用户，再分配角色
       const createData = {
         userName: formData.value.userName,
-        password: formData.value.password,
+        password: formData.value.password ?? '',
         nickName: formData.value.nickName || undefined,
         realName: formData.value.realName || undefined,
         email: formData.value.email || undefined,
@@ -222,7 +231,7 @@ async function handleSubmit() {
       // 如果有角色，分配角色 - 将角色ID转换为角色名称
       if (formData.value.roleIds.length > 0) {
         const roleNames = formData.value.roleIds
-          .map(id => roleOptions.value.find(r => r.id === id)?.name)
+          .map((id: string) => roleOptions.value.find(r => r.id === id)?.name)
           .filter((name): name is string => !!name)
         await userApi.assignRoles({
           userId: userRes.data.id,
@@ -455,8 +464,12 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" :loading="dialogLoading" @click="handleSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
   </div>

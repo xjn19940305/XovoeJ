@@ -1,16 +1,22 @@
 import type { Route } from '#/global'
+import { permissionCodes } from '@/utils/permission'
 
 function Layout() {
   return import('@/layouts/index.vue')
 }
 
-// 商城管理路由
+const shopMenuPermissions = [
+  permissionCodes.admin.product.read,
+  permissionCodes.admin.category.read,
+  permissionCodes.admin.order.read,
+  permissionCodes.admin.aftersale.read,
+]
+
 const shopRoute: Route.recordMainRaw = {
   meta: {
     title: '商城管理',
     icon: 'i-heroicons-solid:shopping-bag',
-    // 只要有任何一个子权限就能看到菜单
-    auth: ['shop:view', 'shop:product:view', 'shop:category:view', 'shop:order:view'],
+    auth: shopMenuPermissions,
   },
   children: [
     {
@@ -21,8 +27,7 @@ const shopRoute: Route.recordMainRaw = {
       meta: {
         title: '商城管理',
         icon: 'i-heroicons-solid:shopping-bag',
-        // 只要有任何一个子权限就能看到菜单
-        auth: ['shop:view', 'shop:product:view', 'shop:category:view', 'shop:order:view'],
+        auth: shopMenuPermissions,
       },
       children: [
         {
@@ -32,7 +37,7 @@ const shopRoute: Route.recordMainRaw = {
           meta: {
             title: '商品管理',
             icon: 'i-heroicons-solid:cube',
-            auth: ['shop:product:view'],
+            auth: [permissionCodes.admin.product.read],
           },
         },
         {
@@ -41,7 +46,7 @@ const shopRoute: Route.recordMainRaw = {
           component: () => import('@/views/shop/product/form.vue'),
           meta: {
             title: '创建商品',
-            auth: ['shop:product:create'],
+            auth: [permissionCodes.admin.product.create],
             menu: false,
           },
         },
@@ -51,7 +56,7 @@ const shopRoute: Route.recordMainRaw = {
           component: () => import('@/views/shop/product/form.vue'),
           meta: {
             title: '编辑商品',
-            auth: ['shop:product:update'],
+            auth: [permissionCodes.admin.product.update],
             menu: false,
           },
         },
@@ -62,7 +67,7 @@ const shopRoute: Route.recordMainRaw = {
           meta: {
             title: '商品分类',
             icon: 'i-heroicons-solid:tag',
-            auth: ['shop:category:view'],
+            auth: [permissionCodes.admin.category.read],
           },
         },
         {
@@ -72,7 +77,17 @@ const shopRoute: Route.recordMainRaw = {
           meta: {
             title: '订单管理',
             icon: 'i-heroicons-solid:shopping-cart',
-            auth: ['shop:order:view'],
+            auth: [permissionCodes.admin.order.read],
+          },
+        },
+        {
+          path: 'after-sale',
+          name: 'ShopAfterSale',
+          component: () => import('@/views/shop/after-sale/index.vue'),
+          meta: {
+            title: '售后管理',
+            icon: 'i-heroicons-solid:arrow-uturn-left',
+            auth: [permissionCodes.admin.aftersale.page, permissionCodes.admin.aftersale.read],
           },
         },
       ],

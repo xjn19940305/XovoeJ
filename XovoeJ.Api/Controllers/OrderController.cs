@@ -14,6 +14,7 @@ namespace XovoeJ.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/user/orders")]
+    [Route("api/mall/orders")]
     [Produces("application/json")]
     [ApiGroup(ApiGroupNames.USER)]
     [Authorize]
@@ -163,6 +164,41 @@ namespace XovoeJ.Api.Controllers
         /// </summary>
         /// <param name="orderNo">订单号</param>
         /// <returns>订单详情</returns>
+        /// <summary>
+        /// 获取订单物流信息
+        /// </summary>
+        /// <param name="orderId">订单ID</param>
+        /// <returns>物流信息</returns>
+        [HttpGet("{orderId}/tracking")]
+        public async Task<IActionResult> GetOrderTracking(string orderId)
+        {
+            try
+            {
+                var userId = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "无效的用户信息" });
+                }
+
+                var tracking = await _orderService.GetOrderTrackingAsync(userId, orderId);
+                if (tracking == null)
+                {
+                    return NotFound(new { message = "订单不存在" });
+                }
+
+                return Ok(new
+                {
+                    data = tracking,
+                    message = "获取成功"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取订单物流信息失败: {OrderId}", orderId);
+                return BadRequest(new { message = "获取订单物流信息失败" });
+            }
+        }
+
         [HttpGet("by-no/{orderNo}")]
         public async Task<IActionResult> GetOrderByNo(string orderNo)
         {
@@ -197,7 +233,7 @@ namespace XovoeJ.Api.Controllers
         /// 取消订单
         /// </summary>
         /// <param name="orderId">订单ID</param>
-        /// <param name="reason">取消原因</param>
+        /// <param name="request">取消请求</param>
         /// <returns></returns>
         [HttpPost("{orderId}/cancel")]
         public async Task<IActionResult> CancelOrder(string orderId, [FromBody] CancelOrderRequestDto? request = null)

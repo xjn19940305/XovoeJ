@@ -1,7 +1,5 @@
 import type { Route } from '#/global'
 import type { RouteRecordRaw } from 'vue-router'
-import generatedRoutes from 'virtual:generated-pages'
-import { setupLayouts } from 'virtual:meta-layouts'
 import xovoejRoutes from './modules/index'
 
 // 固定路由（默认路由）
@@ -61,18 +59,8 @@ const asyncRoutes: Route.recordMainRaw[] = [
   xovoejRoutes,
 ]
 
-const constantRoutesByFilesystem = generatedRoutes.filter((item) => {
-  return item.meta?.enabled !== false && item.meta?.constant === true
-})
-
-const asyncRoutesByFilesystem = [...setupLayouts(generatedRoutes.filter((item) => {
-  return item.meta?.enabled !== false && item.meta?.constant !== true && item.meta?.layout !== false
-}))]
-
 export {
   asyncRoutes,
-  asyncRoutesByFilesystem,
   constantRoutes,
-  constantRoutesByFilesystem,
   systemRoutes,
 }
