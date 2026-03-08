@@ -3,6 +3,7 @@ import type { TagProps } from 'element-plus'
 import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import afterSaleApi from '@/api/modules/after-sale'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'ShopAfterSaleList',
@@ -42,6 +43,37 @@ const typeMap: Record<number, string> = {
   2: '退货退款',
   3: '换货',
 }
+
+const summaryCards = computed(() => [
+  {
+    title: '售后单总数',
+    value: total.value,
+    description: '当前筛选范围内的售后申请总量，用于观察售后压力。',
+    icon: 'i-heroicons-solid:lifebuoy',
+    tone: 'blue' as const,
+  },
+  {
+    title: '待审核',
+    value: tableData.value.filter(item => item.status === 0).length,
+    description: '需要人工介入判断是否通过的售后申请数量。',
+    icon: 'i-heroicons-solid:clipboard-document-check',
+    tone: 'amber' as const,
+  },
+  {
+    title: '待处理',
+    value: tableData.value.filter(item => item.status === 1).length,
+    description: '已审核通过但仍待退款或换货处理的申请数量。',
+    icon: 'i-heroicons-solid:arrow-path-rounded-square',
+    tone: 'sky' as const,
+  },
+  {
+    title: '已完成',
+    value: tableData.value.filter(item => item.status === 3).length,
+    description: '可用于快速判断本页售后闭环处理完成度。',
+    icon: 'i-heroicons-solid:check-circle',
+    tone: 'emerald' as const,
+  },
+])
 
 function getStatusMeta(type: number, status: number): { label: string, type: TagProps['type'] } {
   if (status === 0) {
@@ -224,54 +256,65 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="shop-after-sale-list">
-    <FaCard class="mb-4">
-      <div class="mb-4 flex items-center gap-2 text-base font-medium">
-        <FaIcon name="i-heroicons-solid:funnel" class="size-5" />
-        <span>售后筛选</span>
-      </div>
-      <div class="grid gap-4 lg:grid-cols-3">
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            关键词
-          </div>
-          <el-input
-            v-model="searchForm.keyword"
-            placeholder="搜索售后单号、订单号、用户名"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </div>
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            售后类型
-          </div>
-          <el-select v-model="searchForm.type" placeholder="全部类型" clearable class="w-full">
-            <el-option label="仅退款" :value="1" />
-            <el-option label="退货退款" :value="2" />
-            <el-option label="换货" :value="3" />
-          </el-select>
-        </div>
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            售后状态
-          </div>
-          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
-            <el-option label="待审核" :value="0" />
-            <el-option label="待处理" :value="1" />
-            <el-option label="已拒绝" :value="2" />
-            <el-option label="已完成" :value="3" />
-          </el-select>
+  <div class="shop-after-sale-list space-y-4">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <AdminMetricCard
+        v-for="card in summaryCards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
+    </div>
+
+    <FaCard class="search-card">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:funnel" class="size-5" />
+          <span>售后筛选</span>
         </div>
       </div>
-      <div class="mt-4 flex gap-3">
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">关键词</label>
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索售后单号、订单号、用户名"
+              clearable
+              @keyup.enter="handleSearch"
+            />
+          </div>
+          <div class="search-field">
+            <label class="search-label">售后类型</label>
+            <el-select v-model="searchForm.type" placeholder="全部类型" clearable class="w-full">
+              <el-option label="仅退款" :value="1" />
+              <el-option label="退货退款" :value="2" />
+              <el-option label="换货" :value="3" />
+            </el-select>
+          </div>
+          <div class="search-field">
+            <label class="search-label">售后状态</label>
+            <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
+              <el-option label="待审核" :value="0" />
+              <el-option label="待处理" :value="1" />
+              <el-option label="已拒绝" :value="2" />
+              <el-option label="已完成" :value="3" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
         <FaButton @click="handleSearch">
           <template #icon>
             <FaIcon name="i-heroicons-solid:magnifying-glass" />
           </template>
-          搜索
+          查询
         </FaButton>
-        <FaButton @click="handleReset">
+        <FaButton class="search-reset-btn" @click="handleReset">
           <template #icon>
             <FaIcon name="i-heroicons-solid:arrow-path" />
           </template>
@@ -281,14 +324,21 @@ onMounted(() => {
     </FaCard>
 
     <FaCard>
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-medium">售后管理</span>
+            <span class="ml-2 text-sm text-stone-500">退款、退货与换货处理</span>
+          </div>
+        </div>
+      </template>
+
       <el-table v-loading="loading" :data="tableData">
         <el-table-column prop="afterSaleNo" label="售后单号" min-width="200" />
         <el-table-column prop="orderNo" label="订单号" min-width="180" />
         <el-table-column prop="userName" label="用户" width="120" />
         <el-table-column label="售后类型" width="110" align="center">
-          <template #default="{ row }">
-            {{ typeMap[row.type] || '未知类型' }}
-          </template>
+          <template #default="{ row }">{{ typeMap[row.type] || '未知类型' }}</template>
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
@@ -300,32 +350,22 @@ onMounted(() => {
         <el-table-column prop="reason" label="售后原因" min-width="180" show-overflow-tooltip />
         <el-table-column label="金额/补差" width="120" align="right">
           <template #default="{ row }">
-            {{ row.type === 3 ? '-' : `¥${row.refundAmount.toFixed(2)}` }}
+            {{ row.type === 3 ? '-' : `¥ ${row.refundAmount.toFixed(2)}` }}
           </template>
         </el-table-column>
         <el-table-column label="申请时间" min-width="180">
-          <template #default="{ row }">
-            {{ formatTime(row.appliedAt) }}
-          </template>
+          <template #default="{ row }">{{ formatTime(row.appliedAt) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <div class="flex flex-wrap gap-2">
-              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-                详情
-              </FaButton>
-              <FaButton v-if="row.status === 0" variant="ghost" size="sm" @click="handleApprove(row)">
-                通过
-              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">详情</FaButton>
+              <FaButton v-if="row.status === 0" variant="ghost" size="sm" @click="handleApprove(row)">通过</FaButton>
               <FaButton v-if="row.status === 0 || row.status === 1" variant="ghost" size="sm" class="text-red-500" @click="openRejectDialog(row)">
                 驳回
               </FaButton>
-              <FaButton v-if="row.status === 1 && row.type !== 3" variant="ghost" size="sm" @click="openRefundDialog(row)">
-                退款
-              </FaButton>
-              <FaButton v-if="row.status === 1 && row.type === 3" variant="ghost" size="sm" @click="openExchangeDialog(row)">
-                完成换货
-              </FaButton>
+              <FaButton v-if="row.status === 1 && row.type !== 3" variant="ghost" size="sm" @click="openRefundDialog(row)">退款</FaButton>
+              <FaButton v-if="row.status === 1 && row.type === 3" variant="ghost" size="sm" @click="openExchangeDialog(row)">完成换货</FaButton>
             </div>
           </template>
         </el-table-column>
@@ -347,7 +387,7 @@ onMounted(() => {
     <el-dialog v-model="detailDialogVisible" title="售后详情" width="820px">
       <div v-loading="detailLoading">
         <div v-if="detailData" class="space-y-6">
-          <section class="grid gap-3 border rounded-lg p-4 text-sm md:grid-cols-2">
+          <section class="grid gap-3 rounded-lg border p-4 text-sm md:grid-cols-2">
             <div><span class="text-gray-500">售后单号：</span>{{ detailData.afterSaleNo }}</div>
             <div><span class="text-gray-500">订单号：</span>{{ detailData.orderNo }}</div>
             <div><span class="text-gray-500">用户：</span>{{ detailData.userName || '-' }}</div>
@@ -358,156 +398,46 @@ onMounted(() => {
                 {{ getStatusMeta(detailData.type, detailData.status).label }}
               </el-tag>
             </div>
-            <div><span class="text-gray-500">退款金额：</span>{{ detailData.type === 3 ? '-' : `¥${detailData.refundAmount.toFixed(2)}` }}</div>
+            <div><span class="text-gray-500">退款金额：</span>{{ detailData.type === 3 ? '-' : `¥ ${detailData.refundAmount.toFixed(2)}` }}</div>
             <div><span class="text-gray-500">申请时间：</span>{{ formatTime(detailData.appliedAt) }}</div>
             <div><span class="text-gray-500">审核时间：</span>{{ formatTime(detailData.auditedAt) }}</div>
-            <div>
-              <span class="text-gray-500">{{ detailData.type === 3 ? '完成时间' : '退款时间' }}：</span>
-              {{ formatTime(detailData.type === 3 ? detailData.exchangedAt : detailData.refundedAt) }}
-            </div>
           </section>
-
-          <section class="border rounded-lg p-4 text-sm">
-            <div class="mb-3 font-medium">
-              申请信息
-            </div>
-            <div class="text-gray-600 space-y-2">
-              <div>售后原因：{{ detailData.reason }}</div>
-              <div>问题描述：{{ detailData.description || '-' }}</div>
-              <div>联系人：{{ detailData.contactName || '-' }}</div>
-              <div>联系电话：{{ detailData.contactMobile || '-' }}</div>
-              <div>处理备注：{{ detailData.adminRemark || '-' }}</div>
-            </div>
-          </section>
-
-          <section v-if="detailData.type === 3" class="border rounded-lg p-4 text-sm">
-            <div class="mb-3 font-medium">
-              换货物流
-            </div>
-            <div class="text-gray-600 space-y-2">
-              <div>物流公司：{{ detailData.exchangeShippingCompany || '-' }}</div>
-              <div>运单号：{{ detailData.exchangeTrackingNo || '-' }}</div>
-              <div>换货备注：{{ detailData.exchangeRemark || '-' }}</div>
-            </div>
-          </section>
-
-          <section class="border rounded-lg p-4">
-            <div class="mb-3 font-medium">
-              关联商品
-            </div>
-            <el-table :data="detailData.items" size="small">
-              <el-table-column prop="productName" label="商品名称" min-width="180" />
-              <el-table-column prop="price" label="单价" width="100" align="right">
-                <template #default="{ row }">
-                  ¥{{ row.price.toFixed(2) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="quantity" label="数量" width="80" align="center" />
-            </el-table>
+          <section class="rounded-lg border p-4 text-sm">
+            <div class="mb-2 text-gray-500">售后原因</div>
+            <div class="leading-6">{{ detailData.reason || '-' }}</div>
           </section>
         </div>
       </div>
     </el-dialog>
 
     <el-dialog v-model="rejectDialogVisible" title="驳回售后" width="520px">
-      <el-form label-width="88px">
-        <el-form-item label="处理备注">
-          <el-input
-            v-model="auditRemark"
-            type="textarea"
-            :rows="4"
-            maxlength="200"
-            show-word-limit
-            placeholder="请输入驳回原因或处理说明"
-          />
-        </el-form-item>
-      </el-form>
+      <el-input v-model="auditRemark" type="textarea" :rows="4" placeholder="请输入驳回说明" />
       <template #footer>
-        <div class="flex justify-end gap-3">
-          <el-button @click="rejectDialogVisible = false">
-            取消
-          </el-button>
-          <el-button type="primary" :loading="actionSubmitting" @click="submitReject">
-            确认驳回
-          </el-button>
-        </div>
+        <FaButton variant="outline" @click="rejectDialogVisible = false">取消</FaButton>
+        <FaButton :loading="actionSubmitting" @click="submitReject">确认驳回</FaButton>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="refundDialogVisible" title="执行退款" width="520px">
-      <el-form label-width="88px">
-        <el-form-item label="退款金额">
-          <el-input-number v-model="refundAmount" :min="0.01" :precision="2" class="w-full" />
-        </el-form-item>
-        <el-form-item label="处理备注">
-          <el-input
-            v-model="auditRemark"
-            type="textarea"
-            :rows="4"
-            maxlength="200"
-            show-word-limit
-            placeholder="请输入退款说明"
-          />
-        </el-form-item>
-      </el-form>
+    <el-dialog v-model="refundDialogVisible" title="售后退款" width="520px">
+      <div class="space-y-4">
+        <el-input-number v-model="refundAmount" :min="0.01" :precision="2" class="w-full" />
+        <el-input v-model="auditRemark" type="textarea" :rows="4" placeholder="请输入退款说明" />
+      </div>
       <template #footer>
-        <div class="flex justify-end gap-3">
-          <el-button @click="refundDialogVisible = false">
-            取消
-          </el-button>
-          <el-button type="primary" :loading="actionSubmitting" @click="submitRefund">
-            确认退款
-          </el-button>
-        </div>
+        <FaButton variant="outline" @click="refundDialogVisible = false">取消</FaButton>
+        <FaButton :loading="actionSubmitting" @click="submitRefund">确认退款</FaButton>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="exchangeDialogVisible" title="完成换货" width="560px">
-      <el-form label-width="96px">
-        <el-form-item label="物流公司">
-          <el-input
-            v-model="exchangeForm.shippingCompany"
-            maxlength="64"
-            placeholder="请输入换货物流公司"
-          />
-        </el-form-item>
-        <el-form-item label="运单号">
-          <el-input
-            v-model="exchangeForm.trackingNo"
-            maxlength="64"
-            placeholder="请输入换货运单号"
-          />
-        </el-form-item>
-        <el-form-item label="换货备注">
-          <el-input
-            v-model="exchangeForm.exchangeRemark"
-            type="textarea"
-            :rows="3"
-            maxlength="200"
-            show-word-limit
-            placeholder="可填写补发说明或备注"
-          />
-        </el-form-item>
-        <el-form-item label="处理备注">
-          <el-input
-            v-model="auditRemark"
-            type="textarea"
-            :rows="3"
-            maxlength="200"
-            show-word-limit
-            placeholder="请输入后台处理备注"
-          />
-        </el-form-item>
-      </el-form>
+    <el-dialog v-model="exchangeDialogVisible" title="换货处理" width="560px">
+      <div class="space-y-4">
+        <el-input v-model="exchangeForm.shippingCompany" placeholder="请输入物流公司" />
+        <el-input v-model="exchangeForm.trackingNo" placeholder="请输入运单号" />
+        <el-input v-model="exchangeForm.exchangeRemark" type="textarea" :rows="3" placeholder="请输入换货备注" />
+      </div>
       <template #footer>
-        <div class="flex justify-end gap-3">
-          <el-button @click="exchangeDialogVisible = false">
-            取消
-          </el-button>
-          <el-button type="primary" :loading="actionSubmitting" @click="submitExchange">
-            确认完成
-          </el-button>
-        </div>
+        <FaButton variant="outline" @click="exchangeDialogVisible = false">取消</FaButton>
+        <FaButton :loading="actionSubmitting" @click="submitExchange">确认完成</FaButton>
       </template>
     </el-dialog>
   </div>

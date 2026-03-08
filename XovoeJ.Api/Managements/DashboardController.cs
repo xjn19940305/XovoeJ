@@ -33,36 +33,40 @@ namespace XovoeJ.Api.Managements
                 var monthStart = new DateTime(today.Year, today.Month, 1);
 
                 var totalOrders = await _dbContext.Orders.CountAsync();
-                var todayOrders = await _dbContext.Orders.CountAsync(o => o.CreatedAt >= today);
-                var pendingPaymentOrders = await _dbContext.Orders.CountAsync(o => o.Status == OrderStatus.Pending);
-                var pendingShipmentOrders = await _dbContext.Orders.CountAsync(o => o.Status == OrderStatus.Paid);
-                var shippedOrders = await _dbContext.Orders.CountAsync(o => o.Status == OrderStatus.Shipped);
-                var completedOrders = await _dbContext.Orders.CountAsync(o => o.Status == OrderStatus.Completed || o.Status == OrderStatus.Received);
-                var cancelledOrders = await _dbContext.Orders.CountAsync(o => o.Status == OrderStatus.Cancelled);
+                var todayOrders = await _dbContext.Orders.CountAsync(order => order.CreatedAt >= today);
+                var pendingPaymentOrders = await _dbContext.Orders.CountAsync(order => order.Status == OrderStatus.Pending);
+                var pendingShipmentOrders = await _dbContext.Orders.CountAsync(order => order.Status == OrderStatus.Paid);
+                var shippedOrders = await _dbContext.Orders.CountAsync(order => order.Status == OrderStatus.Shipped);
+                var completedOrders = await _dbContext.Orders.CountAsync(order => order.Status == OrderStatus.Completed || order.Status == OrderStatus.Received);
+                var cancelledOrders = await _dbContext.Orders.CountAsync(order => order.Status == OrderStatus.Cancelled);
 
                 var todaySalesAmount = await _dbContext.Orders
-                    .Where(o => o.PayTime >= today && o.PayStatus == 1)
-                    .SumAsync(o => (decimal?)o.PayAmount) ?? 0m;
+                    .Where(order => order.PayTime >= today && order.PayStatus == 1)
+                    .SumAsync(order => (decimal?)order.PayAmount) ?? 0m;
 
                 var monthSalesAmount = await _dbContext.Orders
-                    .Where(o => o.PayTime >= monthStart && o.PayStatus == 1)
-                    .SumAsync(o => (decimal?)o.PayAmount) ?? 0m;
+                    .Where(order => order.PayTime >= monthStart && order.PayStatus == 1)
+                    .SumAsync(order => (decimal?)order.PayAmount) ?? 0m;
+
+                var productSummary = await _dbContext.ProductSkus
+                    .GroupBy(sku => sku.ProductId)
+                    .Select(group => new
+                    {
+                        ProductId = group.Key,
+                        MaxStock = group.Max(sku => sku.Stock),
+                        HasLowStock = group.Any(sku => sku.Stock > 0 && sku.Stock <= sku.LowStock),
+                    })
+                    .ToListAsync();
 
                 var totalProducts = await _dbContext.Products.CountAsync();
-                var onSaleProducts = await _dbContext.Products.CountAsync(p => p.IsEnabled);
-                var outOfStockProducts = await _dbContext.ProductSkus
-                    .GroupBy(sku => sku.ProductId)
-                    .CountAsync(group => group.Max(sku => sku.Stock) <= 0);
-                var lowStockProducts = await _dbContext.ProductSkus
-                    .Where(sku => sku.Stock > 0 && sku.Stock <= sku.LowStock)
-                    .Select(sku => sku.ProductId)
-                    .Distinct()
-                    .CountAsync();
+                var onSaleProducts = await _dbContext.Products.CountAsync(product => product.IsEnabled);
+                var outOfStockProducts = productSummary.Count(item => item.MaxStock <= 0);
+                var lowStockProducts = productSummary.Count(item => item.HasLowStock);
 
                 var totalUsers = await _dbContext.Users.CountAsync();
-                var todayUsers = await _dbContext.Users.CountAsync(u => u.CreatedAt >= today);
-                var thisWeekUsers = await _dbContext.Users.CountAsync(u => u.CreatedAt >= weekStart);
-                var thisMonthUsers = await _dbContext.Users.CountAsync(u => u.CreatedAt >= monthStart);
+                var todayUsers = await _dbContext.Users.CountAsync(user => user.CreatedAt >= today);
+                var thisWeekUsers = await _dbContext.Users.CountAsync(user => user.CreatedAt >= weekStart);
+                var thisMonthUsers = await _dbContext.Users.CountAsync(user => user.CreatedAt >= monthStart);
 
                 return Ok(new
                 {
@@ -88,7 +92,7 @@ namespace XovoeJ.Api.Managements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load dashboard stats.");
-                return BadRequest(new { message = "Failed to load dashboard stats." });
+                return BadRequest(new { message = "加载首页经营数据失败" });
             }
         }
 

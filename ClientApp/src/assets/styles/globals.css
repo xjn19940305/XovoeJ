@@ -74,6 +74,11 @@ body {
   box-sizing: border-box;
   margin: 0;
   -webkit-tap-highlight-color: transparent;
+  background:
+    radial-gradient(circle at top left, rgb(15 118 110 / 0.05), transparent 24%),
+    linear-gradient(180deg, rgb(248 250 252), rgb(244 247 251));
+  color: hsl(var(--foreground));
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", sans-serif;
 }
 
 #app {
@@ -88,11 +93,12 @@ textarea {
 /* ========== 搜索筛选卡片样式 ========== */
 .search-card {
   width: 100%;
-  border: 1px solid hsl(var(--border));
-  border-radius: 12px;
+  border: 1px solid rgb(226 232 240 / 0.9);
+  border-radius: 24px;
   overflow: hidden;
-  background: hsl(var(--card));
-  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.07), 0 1px 2px hsl(var(--foreground) / 0.04);
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 18px 48px rgb(15 23 42 / 0.06);
+  backdrop-filter: blur(12px);
   transition: all 0.2s ease;
 }
 
@@ -102,30 +108,30 @@ textarea {
 }
 
 .search-card:hover {
-  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.08), 0 2px 6px hsl(var(--foreground) / 0.04);
+  box-shadow: 0 24px 56px rgb(15 23 42 / 0.08);
 }
 
 .search-header {
   display: flex;
   align-items: center;
   padding: 0;
-  background: linear-gradient(90deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--muted) / 0.15) 100%);
-  border-bottom: 1px solid hsl(var(--border));
+  background: linear-gradient(90deg, rgb(15 23 42 / 0.04), rgb(15 118 110 / 0.08));
+  border-bottom: 1px solid rgb(226 232 240 / 0.85);
 }
 
 .search-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 18px 24px;
   font-weight: 600;
   font-size: 14px;
-  color: hsl(var(--primary));
+  color: rgb(15 23 42);
 }
 
 .search-body {
-  padding: 20px;
-  background: hsl(var(--muted) / 0.12);
+  padding: 24px;
+  background: linear-gradient(180deg, rgb(255 255 255), rgb(248 250 252));
 }
 
 .search-grid {
@@ -144,7 +150,7 @@ textarea {
 .search-label {
   font-size: 13px;
   font-weight: 500;
-  color: hsl(var(--foreground) / 0.8);
+  color: rgb(71 85 105);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -154,7 +160,7 @@ textarea {
   content: '';
   width: 3px;
   height: 12px;
-  background: hsl(var(--primary));
+  background: linear-gradient(180deg, rgb(15 23 42), rgb(13 148 136));
   border-radius: 2px;
 }
 
@@ -164,9 +170,9 @@ textarea {
   justify-content: flex-start;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
-  border-top: 1px solid hsl(var(--border) / 0.6);
-  background: linear-gradient(180deg, hsl(var(--muted) / 0.12) 0%, hsl(var(--muted) / 0.18) 100%);
+  padding: 18px 24px 24px;
+  border-top: 1px solid rgb(226 232 240 / 0.8);
+  background: linear-gradient(180deg, rgb(248 250 252 / 0.35) 0%, rgb(241 245 249 / 0.65) 100%);
 }
 
 /* 重置按钮样式 */
@@ -194,16 +200,16 @@ textarea {
 /* Element Plus 输入框美化覆盖 */
 .search-field .el-input {
   --el-input-border-radius: 8px;
-  --el-input-border-color: #d1d5db;
-  --el-input-focus-border-color: hsl(var(--primary));
+  --el-input-border-color: #cbd5e1;
+  --el-input-focus-border-color: #0f766e;
   --el-input-bg-color: #ffffff;
 }
 
 .search-field .el-input__wrapper {
-  border-radius: 8px;
+  border-radius: 14px;
   background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
 }
 
@@ -213,8 +219,8 @@ textarea {
 }
 
 .search-field .el-input__wrapper.is-focus {
-  border-color: hsl(var(--primary));
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  border-color: #0f766e;
+  box-shadow: 0 0 0 4px rgb(15 118 110 / 0.1), 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .dark .search-field .el-input {
@@ -244,9 +250,9 @@ textarea {
 }
 
 .search-field .el-select .el-input__wrapper {
-  border-radius: 8px;
+  border-radius: 14px;
   background-color: #ffffff;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
 }
 
 .search-field .el-select .el-input__wrapper:hover {
@@ -264,9 +270,9 @@ textarea {
 
 /* Element Plus 树形选择器美化 */
 .search-field .el-tree-select .el-input__wrapper {
-  border-radius: 8px;
+  border-radius: 14px;
   background-color: #ffffff;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
 }
 
 .search-field .el-tree-select .el-input__wrapper:hover {
@@ -286,4 +292,128 @@ textarea {
 .search-field .el-select-dropdown__item {
   display: flex;
   align-items: center;
+}
+
+.admin-page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}
+
+.admin-overview-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-overview-grid--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-overview-grid--6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.admin-table-card {
+  border-radius: 24px !important;
+  border: 1px solid rgb(226 232 240 / 0.9) !important;
+  background: rgb(255 255 255 / 0.95) !important;
+  box-shadow: 0 20px 50px rgb(15 23 42 / 0.06) !important;
+  overflow: hidden;
+}
+
+.admin-table-card > div:first-child {
+  padding: 0 !important;
+}
+
+.admin-table-card .el-table {
+  --el-table-border-color: rgb(226 232 240 / 0.9);
+  --el-table-header-bg-color: rgb(248 250 252);
+  --el-table-row-hover-bg-color: rgb(248 250 252);
+}
+
+.admin-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px;
+  border-bottom: 1px solid rgb(226 232 240 / 0.85);
+  background: linear-gradient(180deg, rgb(255 255 255), rgb(248 250 252));
+}
+
+.admin-section-header__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-section-header__title {
+  color: rgb(15 23 42);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-section-header__description {
+  color: rgb(100 116 139);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-dialog-note {
+  color: rgb(71 85 105);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.admin-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid rgb(191 219 254);
+  border-radius: 9999px;
+  background: rgb(239 246 255);
+  padding: 4px 10px;
+  color: rgb(29 78 216);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 1440px) {
+  .admin-overview-grid--5,
+  .admin-overview-grid--6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1120px) {
+  .admin-overview-grid,
+  .admin-overview-grid--5,
+  .admin-overview-grid--6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .search-header,
+  .search-body,
+  .search-footer,
+  .admin-section-header {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-overview-grid,
+  .admin-overview-grid--5,
+  .admin-overview-grid--6 {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import messageApi from '@/api/modules/message'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'MessageRecordPage',
@@ -60,26 +62,30 @@ const summaryCards = computed(() => [
   {
     title: '记录总数',
     value: total.value,
+    description: '当前查询范围内的发送记录总量，用于观察审计规模。',
     icon: 'i-heroicons-solid:clipboard-document-list',
-    tone: 'bg-primary/8 text-primary',
+    tone: 'blue' as const,
   },
   {
     title: '当前页已送达',
     value: tableData.value.filter(item => item.status === 1).length,
+    description: '送达数可直接反映当前页发送执行结果。',
     icon: 'i-heroicons-solid:check-circle',
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    tone: 'emerald' as const,
   },
   {
     title: '当前页失败',
     value: tableData.value.filter(item => item.status === 2).length,
+    description: '失败记录用于定位渠道异常和模板内容问题。',
     icon: 'i-heroicons-solid:exclamation-triangle',
-    tone: 'bg-rose-500/10 text-rose-600',
+    tone: 'rose' as const,
   },
   {
     title: '当前页邮件记录',
     value: tableData.value.filter(item => item.channel === 'email').length,
+    description: '便于快速判断邮件通道在当前批次中的占比。',
     icon: 'i-heroicons-solid:at-symbol',
-    tone: 'bg-sky-500/10 text-sky-600',
+    tone: 'sky' as const,
   },
 ])
 
@@ -127,6 +133,16 @@ async function handleViewDetail(row: Api.Message.MessageRecord) {
   }
 }
 
+async function handleRetry(row: Api.Message.MessageRecord) {
+  await ElMessageBox.confirm(`确认重试发送记录 ${row.traceId || row.id} 吗？`, '重试发送', {
+    type: 'warning',
+  })
+
+  await messageApi.retryRecord(row.id)
+  ElMessage.success('发送记录重试成功')
+  await getRecordList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getRecordList()
@@ -146,24 +162,16 @@ onMounted(() => {
 <template>
   <div class="message-record-page">
     <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <FaCard
+      <AdminMetricCard
         v-for="card in summaryCards"
         :key="card.title"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
     <FaCard class="search-card mb-4">
@@ -176,10 +184,10 @@ onMounted(() => {
       <div class="search-body">
         <div class="search-grid">
           <div class="search-field">
-            <label class="search-label">关键字</label>
+            <label class="search-label">关键词</label>
             <el-input
               v-model="searchForm.keyword"
-              placeholder="搜索接收人、模板或追踪号"
+              placeholder="搜索接收人、模板名或追踪号"
               clearable
             >
               <template #prefix>
@@ -232,7 +240,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <div>
             <span class="font-medium">发送记录</span>
-            <span class="ml-2 text-sm text-stone-500">审计轨迹与送达结果</span>
+            <span class="ml-2 text-sm text-stone-500">消息中心 / 审计轨迹</span>
           </div>
           <FaButton variant="ghost" @click="getRecordList">
             <template #icon>
@@ -243,19 +251,12 @@ onMounted(() => {
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-      >
+      <el-table v-loading="loading" :data="tableData">
         <el-table-column prop="templateName" label="模板名称" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.templateName || '-' }}
-          </template>
+          <template #default="{ row }">{{ row.templateName || '-' }}</template>
         </el-table-column>
         <el-table-column prop="taskName" label="任务名称" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.taskName || '-' }}
-          </template>
+          <template #default="{ row }">{{ row.taskName || '-' }}</template>
         </el-table-column>
         <el-table-column label="渠道" width="110" align="center">
           <template #default="{ row }">
@@ -265,9 +266,7 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="recipient" label="接收人" min-width="180" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.recipient || '-' }}
-          </template>
+          <template #default="{ row }">{{ row.recipient || '-' }}</template>
         </el-table-column>
         <el-table-column prop="businessType" label="业务类型" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">
@@ -277,28 +276,28 @@ onMounted(() => {
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="statusMap[row.status]?.type || 'info'" size="small">
-              {{ statusMap[row.status]?.label || '未知' }}
+              {{ statusMap[row.status]?.label || '未知状态' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="traceId" label="追踪号" min-width="180" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.traceId || '-' }}
-          </template>
+          <template #default="{ row }">{{ row.traceId || '-' }}</template>
         </el-table-column>
         <el-table-column label="发送时间" width="180">
           <template #default="{ row }">
             {{ row.sentAt ? dayjs(row.sentAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:eye" />
-              </template>
-              详情
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton v-if="row.status !== 1" size="sm" @click="handleRetry(row)">
+                重试
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                详情
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -316,48 +315,24 @@ onMounted(() => {
       </div>
     </FaCard>
 
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="记录详情"
-      width="760px"
-    >
+    <el-dialog v-model="detailDialogVisible" title="记录详情" width="760px">
       <div v-loading="detailLoading">
         <el-empty v-if="!currentRecord" description="暂无记录数据" />
         <div v-else class="space-y-4">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="模板名称">
-              {{ currentRecord.templateName || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="任务名称">
-              {{ currentRecord.taskName || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="渠道">
-              {{ channelMap[currentRecord.channel] || currentRecord.channel || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="状态">
-              {{ statusMap[currentRecord.status]?.label || '未知' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="接收人">
-              {{ currentRecord.recipient || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="业务类型">
-              {{ businessTypeMap[currentRecord.businessType || ''] || currentRecord.businessType || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="追踪号" :span="2">
-              {{ currentRecord.traceId || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="发送时间">
-              {{ currentRecord.sentAt ? dayjs(currentRecord.sentAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="创建时间">
-              {{ currentRecord.createdAt ? dayjs(currentRecord.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
-            </el-descriptions-item>
+            <el-descriptions-item label="模板名称">{{ currentRecord.templateName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="任务名称">{{ currentRecord.taskName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="渠道">{{ channelMap[currentRecord.channel] || currentRecord.channel || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="状态">{{ statusMap[currentRecord.status]?.label || '未知状态' }}</el-descriptions-item>
+            <el-descriptions-item label="接收人">{{ currentRecord.recipient || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="业务类型">{{ businessTypeMap[currentRecord.businessType || ''] || currentRecord.businessType || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="追踪号" :span="2">{{ currentRecord.traceId || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="发送时间">{{ currentRecord.sentAt ? dayjs(currentRecord.sentAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ currentRecord.createdAt ? dayjs(currentRecord.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}</el-descriptions-item>
           </el-descriptions>
 
           <FaCard>
-            <p class="mb-2 text-sm text-stone-500">
-              错误信息
-            </p>
+            <p class="mb-2 text-sm text-stone-500">错误信息</p>
             <p class="whitespace-pre-wrap text-sm text-stone-700 leading-6">
               {{ currentRecord.errorMessage || '暂无错误信息' }}
             </p>

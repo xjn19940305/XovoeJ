@@ -42,10 +42,31 @@ export const permissionCodes = {
       update: 'admin.order.update',
       delete: 'admin.order.delete',
     },
+    payment: {
+      page: 'admin.payment',
+      read: 'admin.payment.read',
+      close: 'admin.payment.close',
+    },
     aftersale: {
       page: 'admin.aftersale',
       read: 'admin.aftersale.read',
       manage: 'admin.aftersale.manage',
+    },
+    assetWallet: {
+      page: 'admin.asset.wallet',
+      read: 'admin.asset.wallet.read',
+    },
+    assetWalletLog: {
+      page: 'admin.asset.wallet-log',
+      read: 'admin.asset.wallet-log.read',
+    },
+    assetPoints: {
+      page: 'admin.asset.points',
+      read: 'admin.asset.points.read',
+    },
+    assetPointsLog: {
+      page: 'admin.asset.points-log',
+      read: 'admin.asset.points-log.read',
     },
     banner: {
       page: 'admin.banner',

@@ -9,7 +9,12 @@ const shopMenuPermissions = [
   permissionCodes.admin.product.read,
   permissionCodes.admin.category.read,
   permissionCodes.admin.order.read,
+  permissionCodes.admin.payment.read,
   permissionCodes.admin.aftersale.read,
+  permissionCodes.admin.assetWallet.read,
+  permissionCodes.admin.assetWalletLog.read,
+  permissionCodes.admin.assetPoints.read,
+  permissionCodes.admin.assetPointsLog.read,
 ]
 
 const shopRoute: Route.recordMainRaw = {
@@ -78,6 +83,31 @@ const shopRoute: Route.recordMainRaw = {
             title: '订单管理',
             icon: 'i-heroicons-solid:shopping-cart',
             auth: [permissionCodes.admin.order.read],
+          },
+        },
+        {
+          path: 'payment',
+          name: 'ShopPayment',
+          component: () => import('@/views/shop/payment/index.vue'),
+          meta: {
+            title: '支付单管理',
+            icon: 'i-heroicons-solid:credit-card',
+            auth: [permissionCodes.admin.payment.read],
+          },
+        },
+        {
+          path: 'asset',
+          name: 'ShopAsset',
+          component: () => import('@/views/shop/asset/index.vue'),
+          meta: {
+            title: '资产中心',
+            icon: 'i-heroicons-solid:banknotes',
+            auth: [
+              permissionCodes.admin.assetWallet.read,
+              permissionCodes.admin.assetWalletLog.read,
+              permissionCodes.admin.assetPoints.read,
+              permissionCodes.admin.assetPointsLog.read,
+            ],
           },
         },
         {

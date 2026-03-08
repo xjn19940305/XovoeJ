@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { TagProps } from 'element-plus'
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import growthApi from '@/api/modules/growth'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'GrowthReferralLinkPage',
@@ -53,32 +55,37 @@ const summaryCards = computed(() => {
     {
       title: '推广链接',
       value: total.value,
+      description: '当前筛选范围内的推广链接总量，便于观察渠道铺设覆盖面。',
       icon: 'i-heroicons-solid:share',
-      tone: 'bg-primary/8 text-primary',
+      tone: 'blue' as const,
     },
     {
       title: '当前页点击量',
       value: clicks,
+      description: '用于判断链接曝光后的点击反馈，衡量投放吸引力。',
       icon: 'i-heroicons-solid:cursor-arrow-rays',
-      tone: 'bg-sky-500/10 text-sky-600',
+      tone: 'sky' as const,
     },
     {
       title: '当前页注册数',
       value: signups,
+      description: '直接反映推广链接带来的有效注册规模。',
       icon: 'i-heroicons-solid:user-group',
-      tone: 'bg-emerald-500/10 text-emerald-600',
+      tone: 'emerald' as const,
     },
     {
       title: '当前页奖励金额',
       value: formatAmount(rewards),
+      description: '按当前列表范围汇总奖励支出，便于联动渠道成本判断。',
       icon: 'i-heroicons-solid:banknotes',
-      tone: 'bg-amber-500/10 text-amber-600',
+      tone: 'amber' as const,
     },
     {
       title: '当前页首单转化',
       value: firstOrders,
+      description: '首单转化能更直接反映该批链接的业务承接质量。',
       icon: 'i-heroicons-solid:chart-bar-square',
-      tone: 'bg-violet-500/10 text-violet-600',
+      tone: 'violet' as const,
     },
   ]
 })
@@ -127,6 +134,17 @@ async function handleViewDetail(row: Api.Growth.ReferralLink) {
   }
 }
 
+async function handleUpdateStatus(row: Api.Growth.ReferralLink, status: number) {
+  const actionText = status === 1 ? '启用' : status === 2 ? '停用' : '设为待启用'
+  await ElMessageBox.confirm(`确认${actionText}推广链接“${row.name}”吗？`, '状态变更', {
+    type: 'warning',
+  })
+
+  await growthApi.updateReferralLinkStatus(row.id, { status })
+  ElMessage.success(`推广链接已${actionText}`)
+  await getList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getList()
@@ -139,7 +157,7 @@ function handleSizeChange(size: number) {
 }
 
 function formatAmount(value: number) {
-  return `￥${value.toFixed(2)}`
+  return `¥ ${value.toFixed(2)}`
 }
 
 function formatTime(value?: string) {
@@ -154,72 +172,65 @@ onMounted(() => {
 <template>
   <div class="growth-referral-link-page">
     <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-5">
-      <FaCard v-for="card in summaryCards" :key="card.title">
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+      <AdminMetricCard
+        v-for="card in summaryCards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
-    <FaCard class="mb-4">
-      <div class="mb-4 flex items-center gap-2 text-base font-medium">
-        <FaIcon name="i-heroicons-solid:funnel" class="size-5" />
-        <span>推广链接筛选</span>
-      </div>
-      <div class="grid gap-4 lg:grid-cols-3">
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            关键字
-          </div>
-          <el-input
-            v-model="searchForm.keyword"
-            placeholder="搜索链接名称、链接编码、负责人或活动名"
-            clearable
-            @keyup.enter="handleSearch"
-          />
+    <FaCard class="search-card mb-4">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
+          <span>推广链接筛选</span>
         </div>
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            投放渠道
-          </div>
-          <el-select v-model="searchForm.channel" placeholder="全部渠道" clearable class="w-full">
-            <el-option
-              v-for="item in channelOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+      </div>
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">关键词</label>
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索链接名称、链接编码、负责人或活动名"
+              clearable
+              @keyup.enter="handleSearch"
             />
-          </el-select>
-        </div>
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            链接状态
           </div>
-          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
-            <el-option label="待启用" :value="0" />
-            <el-option label="生效中" :value="1" />
-            <el-option label="已停用" :value="2" />
-          </el-select>
+          <div class="search-field">
+            <label class="search-label">投放渠道</label>
+            <el-select v-model="searchForm.channel" placeholder="全部渠道" clearable class="w-full">
+              <el-option
+                v-for="item in channelOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </div>
+          <div class="search-field">
+            <label class="search-label">链接状态</label>
+            <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
+              <el-option label="待启用" :value="0" />
+              <el-option label="生效中" :value="1" />
+              <el-option label="已停用" :value="2" />
+            </el-select>
+          </div>
         </div>
       </div>
-      <div class="mt-4 flex gap-3">
+      <div class="search-footer">
         <FaButton @click="handleSearch">
           <template #icon>
             <FaIcon name="i-heroicons-solid:magnifying-glass" />
           </template>
           查询
         </FaButton>
-        <FaButton @click="handleReset">
+        <FaButton class="search-reset-btn" @click="handleReset">
           <template #icon>
             <FaIcon name="i-heroicons-solid:arrow-path" />
           </template>
@@ -233,7 +244,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <div>
             <span class="font-medium">推广链接</span>
-            <span class="ml-2 text-sm text-stone-500">第 6 阶段 / 推广链接与归因</span>
+            <span class="ml-2 text-sm text-stone-500">增长中心 / 渠道归因</span>
           </div>
           <FaButton variant="ghost" @click="getList">
             <template #icon>
@@ -293,11 +304,36 @@ onMounted(() => {
             {{ formatTime(row.lastVisitAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              详情
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton
+                v-if="row.status !== 1"
+                size="sm"
+                @click="handleUpdateStatus(row, 1)"
+              >
+                启用
+              </FaButton>
+              <FaButton
+                v-if="row.status !== 2"
+                size="sm"
+                variant="outline"
+                @click="handleUpdateStatus(row, 2)"
+              >
+                停用
+              </FaButton>
+              <FaButton
+                v-if="row.status !== 0"
+                size="sm"
+                variant="outline"
+                @click="handleUpdateStatus(row, 0)"
+              >
+                待启用
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                详情
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>

@@ -10,4 +10,8 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\..\Shared\XovoeJ.Contracts\XovoeJ.Contracts.csproj" />
+	</ItemGroup>
+
 </Project>

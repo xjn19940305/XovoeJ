@@ -113,6 +113,57 @@ namespace XovoeJ.Api.Managements
                             Node(20304, 203, "订单删除", "admin.order.delete", "button"),
                         ]),
                     Node(
+                        205,
+                        2,
+                        "支付单管理",
+                        "admin.payment",
+                        "page",
+                        children:
+                        [
+                            Node(20501, 205, "支付单查看", "admin.payment.read", "button"),
+                            Node(20502, 205, "支付单关闭", "admin.payment.close", "button"),
+                        ]),
+                    Node(
+                        206,
+                        2,
+                        "钱包账户",
+                        "admin.asset.wallet",
+                        "page",
+                        children:
+                        [
+                            Node(20601, 206, "钱包账户查看", "admin.asset.wallet.read", "button"),
+                        ]),
+                    Node(
+                        207,
+                        2,
+                        "钱包流水",
+                        "admin.asset.wallet-log",
+                        "page",
+                        children:
+                        [
+                            Node(20701, 207, "钱包流水查看", "admin.asset.wallet-log.read", "button"),
+                        ]),
+                    Node(
+                        208,
+                        2,
+                        "积分账户",
+                        "admin.asset.points",
+                        "page",
+                        children:
+                        [
+                            Node(20801, 208, "积分账户查看", "admin.asset.points.read", "button"),
+                        ]),
+                    Node(
+                        209,
+                        2,
+                        "积分流水",
+                        "admin.asset.points-log",
+                        "page",
+                        children:
+                        [
+                            Node(20901, 209, "积分流水查看", "admin.asset.points-log.read", "button"),
+                        ]),
+                    Node(
                         204,
                         2,
                         "售后管理",

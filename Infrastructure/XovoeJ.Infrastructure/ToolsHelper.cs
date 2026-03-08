@@ -11,16 +11,21 @@ namespace XovoeJ.Infrastructure
 {
     public static class ToolsHelper
     {
-        public static string GetDescription(this Enum enumName)
+        public static string GetDescription(this System.Enum enumName)
         {
-            string description;
-            FieldInfo fieldInfo = enumName.GetType().GetField(enumName.ToString());
-            DescriptionAttribute[] attributes = fieldInfo.GetCustomAttributes<DescriptionAttribute>().ToArray();
-            if (attributes != null && attributes.Length > 0)
-                description = attributes[0].Description;
-            else
+            FieldInfo? fieldInfo = enumName.GetType().GetField(enumName.ToString());
+            if (fieldInfo == null)
+            {
                 return string.Empty;
-            return description;
+            }
+
+            DescriptionAttribute[] attributes = fieldInfo.GetCustomAttributes<DescriptionAttribute>().ToArray();
+            if (attributes.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            return attributes[0].Description;
         }
 
         public static string GenerateOrderNo(string Prefix = "XovoeJ_")

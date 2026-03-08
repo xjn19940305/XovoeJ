@@ -51,8 +51,10 @@ namespace XovoeJ.Api.Managements
 
             return Ok(new
             {
-                list,
-                total
+                items = list,
+                total,
+                page = Math.Max(page, 1),
+                pageSize = Math.Max(pageSize, 1),
             });
         }
 
@@ -61,7 +63,7 @@ namespace XovoeJ.Api.Managements
         {
             return Ok(new
             {
-                list = PermissionCatalog.GetTree()
+                items = PermissionCatalog.GetTree(),
             });
         }
     }

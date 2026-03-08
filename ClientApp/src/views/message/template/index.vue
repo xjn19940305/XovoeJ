@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import messageApi from '@/api/modules/message'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'MessageTemplatePage',
@@ -60,26 +62,30 @@ const summaryCards = computed(() => [
   {
     title: '模板总数',
     value: total.value,
+    description: '当前查询范围内的消息模板总量，用于观察模板治理规模。',
     icon: 'i-heroicons-solid:envelope',
-    tone: 'bg-primary/8 text-primary',
+    tone: 'blue' as const,
   },
   {
     title: '当前页已启用',
     value: tableData.value.filter(item => item.status === 1).length,
+    description: '反映真正可被消息任务调用的模板数量。',
     icon: 'i-heroicons-solid:check-badge',
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    tone: 'emerald' as const,
   },
   {
     title: '当前页短信模板',
     value: tableData.value.filter(item => item.channel === 'sms').length,
+    description: '便于观察高频触达渠道的模板配置密度。',
     icon: 'i-heroicons-solid:device-phone-mobile',
-    tone: 'bg-amber-500/10 text-amber-600',
+    tone: 'amber' as const,
   },
   {
     title: '当前页邮件模板',
     value: tableData.value.filter(item => item.channel === 'email').length,
+    description: '用于追踪异步通知和营销邮件的模板沉淀情况。',
     icon: 'i-heroicons-solid:at-symbol',
-    tone: 'bg-sky-500/10 text-sky-600',
+    tone: 'sky' as const,
   },
 ])
 
@@ -127,6 +133,17 @@ async function handleViewDetail(row: Api.Message.MessageTemplate) {
   }
 }
 
+async function handleUpdateStatus(row: Api.Message.MessageTemplate, status: number) {
+  const actionText = status === 1 ? '启用' : status === 2 ? '停用' : '设为草稿'
+  await ElMessageBox.confirm(`确认${actionText}模板“${row.name}”吗？`, '模板状态变更', {
+    type: 'warning',
+  })
+
+  await messageApi.updateTemplateStatus(row.id, { status })
+  ElMessage.success(`模板已${actionText}`)
+  await getTemplateList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getTemplateList()
@@ -146,24 +163,16 @@ onMounted(() => {
 <template>
   <div class="message-template-page">
     <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <FaCard
+      <AdminMetricCard
         v-for="card in summaryCards"
         :key="card.title"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
     <FaCard class="search-card mb-4">
@@ -176,7 +185,7 @@ onMounted(() => {
       <div class="search-body">
         <div class="search-grid">
           <div class="search-field">
-            <label class="search-label">关键字</label>
+            <label class="search-label">关键词</label>
             <el-input
               v-model="searchForm.keyword"
               placeholder="搜索模板名称或编码"
@@ -232,7 +241,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <div>
             <span class="font-medium">消息模板</span>
-            <span class="ml-2 text-sm text-stone-500">第 7 阶段消息中心</span>
+            <span class="ml-2 text-sm text-stone-500">消息中心 / 模板治理</span>
           </div>
           <FaButton variant="ghost" @click="getTemplateList">
             <template #icon>
@@ -243,10 +252,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-      >
+      <el-table v-loading="loading" :data="tableData">
         <el-table-column prop="name" label="模板名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="code" label="模板编码" min-width="180" show-overflow-tooltip />
         <el-table-column label="渠道" width="110" align="center">
@@ -269,7 +275,7 @@ onMounted(() => {
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="statusMap[row.status]?.type || 'info'" size="small">
-              {{ statusMap[row.status]?.label || '未知' }}
+              {{ statusMap[row.status]?.label || '未知状态' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -278,14 +284,22 @@ onMounted(() => {
             {{ row.updatedAt ? dayjs(row.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:eye" />
-              </template>
-              预览
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton v-if="row.status !== 1" size="sm" @click="handleUpdateStatus(row, 1)">
+                启用
+              </FaButton>
+              <FaButton v-if="row.status !== 2" size="sm" variant="outline" @click="handleUpdateStatus(row, 2)">
+                停用
+              </FaButton>
+              <FaButton v-if="row.status !== 0" size="sm" variant="outline" @click="handleUpdateStatus(row, 0)">
+                草稿
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                预览
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -303,39 +317,21 @@ onMounted(() => {
       </div>
     </FaCard>
 
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="模板预览"
-      width="760px"
-    >
+    <el-dialog v-model="detailDialogVisible" title="模板预览" width="760px">
       <div v-loading="detailLoading">
         <el-empty v-if="!currentTemplate" description="暂无模板数据" />
         <div v-else class="space-y-4">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="模板名称">
-              {{ currentTemplate.name }}
-            </el-descriptions-item>
-            <el-descriptions-item label="模板编码">
-              {{ currentTemplate.code }}
-            </el-descriptions-item>
-            <el-descriptions-item label="渠道">
-              {{ channelMap[currentTemplate.channel] || currentTemplate.channel || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="状态">
-              {{ statusMap[currentTemplate.status]?.label || '未知' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="业务类型">
-              {{ businessTypeMap[currentTemplate.businessType || ''] || currentTemplate.businessType || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="主题">
-              {{ currentTemplate.subject || '-' }}
-            </el-descriptions-item>
+            <el-descriptions-item label="模板名称">{{ currentTemplate.name }}</el-descriptions-item>
+            <el-descriptions-item label="模板编码">{{ currentTemplate.code }}</el-descriptions-item>
+            <el-descriptions-item label="渠道">{{ channelMap[currentTemplate.channel] || currentTemplate.channel || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="状态">{{ statusMap[currentTemplate.status]?.label || '未知状态' }}</el-descriptions-item>
+            <el-descriptions-item label="业务类型">{{ businessTypeMap[currentTemplate.businessType || ''] || currentTemplate.businessType || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="主题">{{ currentTemplate.subject || '-' }}</el-descriptions-item>
           </el-descriptions>
 
           <FaCard>
-            <p class="mb-2 text-sm text-stone-500">
-              内容预览
-            </p>
+            <p class="mb-2 text-sm text-stone-500">内容预览</p>
             <p class="whitespace-pre-wrap text-sm text-stone-700 leading-6">
               {{ currentTemplate.contentPreview || currentTemplate.description || '暂无预览内容' }}
             </p>

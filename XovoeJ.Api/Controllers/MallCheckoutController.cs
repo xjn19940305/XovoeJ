@@ -6,6 +6,7 @@ using System.Text.Json;
 using XovoeJ.Api.Swaggers;
 using XovoeJ.Contracts.Mall;
 using XovoeJ.Entities;
+using XovoeJ.Enum;
 using XovoeJ.Persistence.PostgreSql;
 
 namespace XovoeJ.Api.Controllers
@@ -45,7 +46,8 @@ namespace XovoeJ.Api.Controllers
 
                 var productAmount = items.Sum(item => item.Subtotal);
                 var address = await ResolveAddressAsync(userId, request.AddressId);
-                var coupon = await ResolveCouponAsync(request.CouponId, productAmount);
+                var couponId = request.UserCouponId ?? request.CouponId;
+                var coupon = await ResolveCouponAsync(userId, couponId, productAmount);
                 var discountAmount = coupon?.AppliedDiscountAmount ?? 0m;
                 var freightAmount = 0m;
                 var payAmount = Math.Max(0m, productAmount - discountAmount + freightAmount);
@@ -96,11 +98,7 @@ namespace XovoeJ.Api.Controllers
                 return cartItems.Select(item =>
                 {
                     var sku = item.Product?.Skus.FirstOrDefault(row => row.Id == item.SkuId);
-                    return MapPreviewItem(
-                        item.ProductId,
-                        item.Product,
-                        sku,
-                        item.Quantity);
+                    return MapPreviewItem(item.ProductId, item.Product, sku, item.Quantity);
                 }).ToList();
             }
 
@@ -146,35 +144,40 @@ namespace XovoeJ.Api.Controllers
             };
         }
 
-        private async Task<CheckoutCouponDto?> ResolveCouponAsync(string? couponId, decimal productAmount)
+        private async Task<CheckoutCouponDto?> ResolveCouponAsync(string userId, string? userCouponId, decimal productAmount)
         {
-            if (string.IsNullOrWhiteSpace(couponId))
+            if (string.IsNullOrWhiteSpace(userCouponId))
             {
                 return null;
             }
 
             var now = DateTime.UtcNow;
-            var coupon = await _dbContext.CouponTemplates
+            var userCoupon = await _dbContext.UserCoupons
                 .AsNoTracking()
-                .FirstOrDefaultAsync(item => item.Id == couponId
-                    && item.Status == 1
-                    && (!item.StartTime.HasValue || item.StartTime <= now)
-                    && (!item.EndTime.HasValue || item.EndTime >= now));
+                .FirstOrDefaultAsync(item => item.Id == userCouponId
+                    && item.UserId == userId
+                    && item.Status == CouponStatus.Unused);
 
-            if (coupon == null)
+            if (userCoupon == null)
             {
-                return null;
+                throw new ArgumentException("优惠券不存在、不可用或不属于当前用户。");
             }
 
-            var appliedDiscountAmount = CalculateCouponDiscount(coupon, productAmount);
+            if (userCoupon.ExpiredAt.HasValue && userCoupon.ExpiredAt.Value < now)
+            {
+                throw new ArgumentException("优惠券已过期。");
+            }
+
+            var appliedDiscountAmount = CalculateCouponDiscount(userCoupon, productAmount);
             return new CheckoutCouponDto
             {
-                Id = coupon.Id,
-                Name = coupon.Name,
-                CouponType = coupon.CouponType,
-                DiscountType = coupon.DiscountType,
-                DiscountValue = coupon.DiscountValue,
-                MinOrderAmount = coupon.MinOrderAmount,
+                Id = userCoupon.CouponTemplateId,
+                UserCouponId = userCoupon.Id,
+                Name = userCoupon.SnapshotName,
+                CouponType = userCoupon.SnapshotCouponType,
+                DiscountType = userCoupon.SnapshotDiscountType,
+                DiscountValue = userCoupon.SnapshotDiscountValue,
+                MinOrderAmount = userCoupon.SnapshotMinOrderAmount,
                 AppliedDiscountAmount = appliedDiscountAmount,
             };
         }
@@ -200,20 +203,20 @@ namespace XovoeJ.Api.Controllers
             };
         }
 
-        private static decimal CalculateCouponDiscount(CouponTemplate coupon, decimal productAmount)
+        private static decimal CalculateCouponDiscount(UserCoupon coupon, decimal productAmount)
         {
-            if (productAmount < coupon.MinOrderAmount)
+            if (productAmount < coupon.SnapshotMinOrderAmount)
             {
-                return 0m;
+                throw new ArgumentException("当前订单金额未达到优惠券使用门槛。");
             }
 
-            if (coupon.CouponType == 1)
+            if (coupon.SnapshotCouponType == 1)
             {
-                var rate = Math.Clamp(coupon.DiscountValue / 10m, 0m, 1m);
+                var rate = Math.Clamp(coupon.SnapshotDiscountValue / 10m, 0m, 1m);
                 return Math.Round(productAmount * (1 - rate), 2, MidpointRounding.AwayFromZero);
             }
 
-            return Math.Min(productAmount, coupon.DiscountValue);
+            return Math.Min(productAmount, coupon.SnapshotDiscountValue);
         }
 
         private static string JoinAddress(string? province, string? city, string? area, string detailAddress)

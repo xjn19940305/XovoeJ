@@ -101,6 +101,10 @@ declare namespace Api {
       formConfig?: any
     }
 
+    interface UpdateWorkflowDefinitionStatusRequest {
+      isEnabled: boolean
+    }
+
     // 工作流实例
     interface WorkflowInstance {
       id: string
@@ -124,10 +128,11 @@ declare namespace Api {
     }
 
     interface PendingTasksResponse {
-      data: WorkflowInstance[]
+      items: WorkflowInstance[]
       total: number
       page: number
       pageSize: number
+      statusCount?: Record<string, number>
     }
 
     // 已完成步骤

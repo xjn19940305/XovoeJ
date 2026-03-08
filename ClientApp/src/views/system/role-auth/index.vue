@@ -21,9 +21,9 @@ const treeRenderKey = ref(0)
 const preserveWildcardPermission = ref(false)
 
 const permissionTypeMap: Record<Api.Permission.PermissionType, { label: string, color: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  menu: { label: 'Menu', color: 'primary' },
-  page: { label: 'Page', color: 'success' },
-  button: { label: 'Button', color: 'warning' },
+  menu: { label: '菜单', color: 'primary' },
+  page: { label: '页面', color: 'success' },
+  button: { label: '按钮', color: 'warning' },
 }
 
 async function getRoleList() {
@@ -33,7 +33,7 @@ async function getRoleList() {
 
 async function getPermissionTree() {
   const res = await permissionApi.getTree()
-  permissionTree.value = res.data.list || []
+  permissionTree.value = res.data.items || []
 }
 
 async function syncCheckedKeys(codes: string[]) {
@@ -91,7 +91,7 @@ async function toggleCheckAll() {
 
 async function handleSave() {
   if (!selectedRoleId.value) {
-    ElMessage.warning('Please select a role first')
+    ElMessage.warning('请先选择角色')
     return
   }
 
@@ -106,7 +106,7 @@ async function handleSave() {
       roleId: selectedRoleId.value,
       permissionCodes,
     })
-    ElMessage.success('Permissions saved')
+    ElMessage.success('权限保存成功')
   }
   finally {
     saveLoading.value = false
@@ -152,29 +152,29 @@ onMounted(async () => {
     <div class="auth-info-card mb-4">
       <div class="auth-info-header">
         <FaIcon name="i-heroicons-solid:information-circle" class="size-5" />
-        <span class="auth-info-title">Permission Guide</span>
+        <span class="auth-info-title">权限说明</span>
       </div>
       <div class="auth-info-body">
         <div class="auth-info-section">
-          <span class="auth-info-label">Types</span>
+          <span class="auth-info-label">节点类型</span>
           <div class="auth-info-tags">
             <span class="auth-tag auth-tag-menu">
               <FaIcon name="i-heroicons-solid:bars-3" class="size-3.5" />
-              Menu
+              菜单
             </span>
             <span class="auth-tag auth-tag-page">
               <FaIcon name="i-heroicons-solid:document-text" class="size-3.5" />
-              Page
+              页面
             </span>
             <span class="auth-tag auth-tag-button">
               <FaIcon name="i-heroicons-solid:cursor-arrow-rays" class="size-3.5" />
-              Button
+              按钮
             </span>
           </div>
         </div>
         <div class="auth-info-section">
-          <span class="auth-info-label">Hint</span>
-          <span class="auth-info-hint">Select a role on the left, then assign permission nodes on the right.</span>
+          <span class="auth-info-label">使用说明</span>
+          <span class="auth-info-hint">先在左侧选择角色，再在右侧勾选需要授权的权限节点。</span>
         </div>
       </div>
     </div>
@@ -184,7 +184,7 @@ onMounted(async () => {
         <FaCard class="h-full">
           <template #header>
             <div class="flex items-center justify-between">
-              <span class="font-medium">Roles</span>
+              <span class="font-medium">角色列表</span>
               <el-tag size="small">
                 {{ roleList.length }}
               </el-tag>
@@ -202,7 +202,7 @@ onMounted(async () => {
                 {{ role.name }}
               </div>
               <div class="role-description">
-                {{ role.description || 'No description' }}
+                {{ role.description || '暂无描述' }}
               </div>
             </div>
           </div>
@@ -214,32 +214,32 @@ onMounted(async () => {
           <template #header>
             <div class="flex items-center justify-between">
               <span class="font-medium">
-                {{ selectedRoleId ? 'Permission Tree' : 'Select a role' }}
+                {{ selectedRoleId ? '权限树' : '请选择角色' }}
               </span>
               <div v-if="selectedRoleId" class="flex gap-2">
                 <FaButton size="sm" variant="outline" @click="toggleExpand">
                   <template #icon>
                     <FaIcon :name="expandAll ? 'i-iconoir:nav-arrow-up' : 'i-iconoir:nav-arrow-down'" />
                   </template>
-                  {{ expandAll ? 'Collapse' : 'Expand' }}
+                  {{ expandAll ? '全部折叠' : '全部展开' }}
                 </FaButton>
                 <FaButton size="sm" variant="outline" @click="toggleCheckAll">
                   <template #icon>
                     <FaIcon name="i-iconoir:check" />
                   </template>
-                  Toggle All
+                  全选/取消
                 </FaButton>
                 <FaButton size="sm" type="primary" :loading="saveLoading" @click="handleSave">
                   <template #icon>
                     <FaIcon name="i-iconoir:save-floppy-disk" />
                   </template>
-                  Save
+                  保存授权
                 </FaButton>
               </div>
             </div>
           </template>
           <div v-loading="loading" class="permission-tree-content">
-            <el-empty v-if="!selectedRoleId" description="Select a role to configure permissions" />
+            <el-empty v-if="!selectedRoleId" description="请选择一个角色后再配置权限" />
             <el-tree
               v-else
               :key="treeRenderKey"

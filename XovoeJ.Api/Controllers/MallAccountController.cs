@@ -66,9 +66,9 @@ namespace XovoeJ.Api.Controllers
                     .Select(MapAddress)
                     .FirstOrDefaultAsync();
 
-                var availableCouponCount = await _dbContext.CouponTemplates
+                var availableCouponCount = await _dbContext.UserCoupons
                     .AsNoTracking()
-                    .CountAsync(item => item.Status == 1);
+                    .CountAsync(item => item.UserId == userId && item.Status == CouponStatus.Unused);
 
                 return Ok(new MallAccountSummaryDto
                 {
@@ -348,12 +348,12 @@ namespace XovoeJ.Api.Controllers
 
             if (totalSpent >= 5000m)
             {
-                return "金卡会员";
+                return "黄金会员";
             }
 
             if (totalSpent >= 1000m)
             {
-                return "银卡会员";
+                return "白银会员";
             }
 
             return "普通会员";

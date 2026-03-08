@@ -38,6 +38,51 @@ declare namespace Api {
       couponType?: number
     }
 
+    type CouponIssueTargetType = 'all-users' | 'specified-users' | 'member-levels'
+
+    interface CouponIssueBatch {
+      id: string
+      targetType: CouponIssueTargetType | string
+      couponTemplateIds: string[]
+      targetUserIds: string[]
+      targetMemberLevelCodes: string[]
+      requestedCount: number
+      succeededCount: number
+      failedCount: number
+      status: string
+      createdBy?: string
+      createdAt: string
+      updatedAt?: string
+    }
+
+    interface CreateCouponIssueBatchRequest {
+      targetType: CouponIssueTargetType
+      couponTemplateIds: string[]
+      targetUserIds?: string[]
+      targetMemberLevelCodes?: string[]
+    }
+
+    interface MemberLevelRewardRule {
+      id: string
+      levelCode: string
+      levelName: string
+      couponTemplateIds: string[]
+      status: number
+      sort: number
+      description?: string
+      createdAt: string
+      updatedAt?: string
+    }
+
+    interface SaveMemberLevelRewardRuleRequest {
+      levelCode: string
+      levelName: string
+      couponTemplateIds: string[]
+      status: number
+      sort: number
+      description?: string
+    }
+
     interface PromotionActivity {
       id: string
       name: string
@@ -132,5 +177,9 @@ declare namespace Api {
     }
 
     interface BargainListParams extends PageParams {}
+
+    interface UpdateStatusRequest {
+      status: number
+    }
   }
 }

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import marketingApi from '@/api/modules/marketing'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
+import AdminPageHero from '@/components/admin/AdminPageHero.vue'
 
 defineOptions({
   name: 'MarketingPromotionPage',
@@ -43,7 +46,7 @@ const statusOptions = [
   { label: '已结束', value: 3 },
 ]
 
-const statusMap: Record<number, { label: string, type: 'danger' | 'info' | 'primary' | 'success' | 'warning' }> = {
+const statusMap: Record<number, { label: string, type: 'danger' | 'info' | 'success' | 'warning' }> = {
   0: { label: '待开始', type: 'info' },
   1: { label: '进行中', type: 'success' },
   2: { label: '已暂停', type: 'warning' },
@@ -54,26 +57,30 @@ const summaryCards = computed(() => [
   {
     title: '活动总数',
     value: total.value,
+    description: '统一收口满减、限折、买赠和套餐活动',
     icon: 'i-heroicons-solid:megaphone',
-    tone: 'bg-primary/8 text-primary',
+    tone: 'blue' as const,
   },
   {
-    title: '当前页进行中',
+    title: '进行中活动',
     value: tableData.value.filter(item => item.status === 1).length,
-    icon: 'i-heroicons-solid:bolt',
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    description: '当前正在承接流量和转化的活动数量',
+    icon: 'i-heroicons-solid:fire',
+    tone: 'emerald' as const,
   },
   {
-    title: '当前页参与人数',
+    title: '参与人次',
     value: tableData.value.reduce((sum, item) => sum + item.participantCount, 0),
+    description: '反映营销活动当前触达和参与热度',
     icon: 'i-heroicons-solid:users',
-    tone: 'bg-amber-500/10 text-amber-600',
+    tone: 'amber' as const,
   },
   {
-    title: '当前页订单数',
+    title: '关联订单数',
     value: tableData.value.reduce((sum, item) => sum + item.orderCount, 0),
+    description: '用于判断活动对订单结果的实际带动',
     icon: 'i-heroicons-solid:shopping-bag',
-    tone: 'bg-sky-500/10 text-sky-600',
+    tone: 'sky' as const,
   },
 ])
 
@@ -122,6 +129,17 @@ async function handleViewDetail(row: Api.Marketing.PromotionActivity) {
   }
 }
 
+async function handleUpdateStatus(row: Api.Marketing.PromotionActivity, status: number) {
+  const actionText = status === 1 ? '开始' : status === 2 ? '暂停' : status === 3 ? '结束' : '设为待开始'
+  await ElMessageBox.confirm(`确认${actionText}营销活动“${row.name}”吗？`, '活动状态变更', {
+    type: 'warning',
+  })
+
+  await marketingApi.updatePromotionStatus(row.id, { status })
+  ElMessage.success('营销活动状态更新成功')
+  await getPromotionList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getPromotionList()
@@ -135,7 +153,7 @@ function handleSizeChange(size: number) {
 
 function formatValidity(row: Api.Marketing.PromotionActivity) {
   if (!row.startTime && !row.endTime) {
-    return '暂无'
+    return '未设置有效期'
   }
   const start = row.startTime ? dayjs(row.startTime).format('YYYY-MM-DD HH:mm') : '不限开始'
   const end = row.endTime ? dayjs(row.endTime).format('YYYY-MM-DD HH:mm') : '不限结束'
@@ -148,33 +166,46 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="marketing-promotion-page">
-    <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <FaCard
+  <div class="admin-page-shell marketing-promotion-page">
+    <AdminPageHero
+      eyebrow="核心营销"
+      title="营销活动中心"
+      description="核心营销活动页聚焦统一价格规则、适用范围和活动状态。页面结构统一成头图区、指标卡、搜索区和主表格，避免活动信息贴边和卡片层级混乱。"
+    >
+      <template #actions>
+        <FaButton variant="ghost" @click="getPromotionList">
+          <template #icon>
+            <FaIcon name="i-heroicons-solid:arrow-path" />
+          </template>
+          刷新活动
+        </FaButton>
+      </template>
+
+      <div class="marketing-promotion-hero__tags">
+        <span>支持满减、限时折扣、买赠和套餐活动</span>
+        <span>适用范围、优先级与叠加规则统一展示</span>
+        <span>状态切换保持后台可联调</span>
+      </div>
+    </AdminPageHero>
+
+    <div class="admin-overview-grid">
+      <AdminMetricCard
         v-for="card in summaryCards"
         :key="card.title"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
-    <FaCard class="search-card mb-4">
+    <FaCard class="search-card">
       <div class="search-header">
         <div class="search-title">
           <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
-          <span>活动筛选</span>
+          <span>营销活动筛选</span>
         </div>
       </div>
       <div class="search-body">
@@ -231,12 +262,12 @@ onMounted(() => {
       </div>
     </FaCard>
 
-    <FaCard>
+    <FaCard class="admin-table-card">
       <template #header>
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="font-medium">核心营销活动</span>
-            <span class="ml-2 text-sm text-stone-500">统一价格规则与参与范围</span>
+        <div class="admin-section-header">
+          <div class="admin-section-header__meta">
+            <span class="admin-section-header__title">营销活动列表</span>
+            <span class="admin-section-header__description">统一查看活动类型、参与范围、优先级和状态切换。</span>
           </div>
           <FaButton variant="ghost" @click="getPromotionList">
             <template #icon>
@@ -265,14 +296,14 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="priority" label="优先级" width="90" align="center" />
-        <el-table-column label="叠加规则" width="90" align="center">
+        <el-table-column label="叠加规则" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.stackable ? 'success' : 'info'" size="small">
-              {{ row.stackable ? '可叠加' : '不可叠加' }}
+              {{ row.stackable ? '可叠加' : '不叠加' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="参与人数 / 订单数" width="150" align="center">
+        <el-table-column label="参与人次 / 订单数" width="160" align="center">
           <template #default="{ row }">
             {{ row.participantCount }} / {{ row.orderCount }}
           </template>
@@ -294,19 +325,33 @@ onMounted(() => {
             {{ row.createdAt ? dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:eye" />
-              </template>
-              详情
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton v-if="row.status !== 1" size="sm" @click="handleUpdateStatus(row, 1)">
+                开始
+              </FaButton>
+              <FaButton v-if="row.status !== 2" size="sm" variant="outline" @click="handleUpdateStatus(row, 2)">
+                暂停
+              </FaButton>
+              <FaButton v-if="row.status !== 3" size="sm" variant="outline" @click="handleUpdateStatus(row, 3)">
+                结束
+              </FaButton>
+              <FaButton v-if="row.status !== 0" size="sm" variant="outline" @click="handleUpdateStatus(row, 0)">
+                待开始
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                <template #icon>
+                  <FaIcon name="i-iconoir:eye" />
+                </template>
+                详情
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-4 flex justify-end">
+      <div class="mt-4 flex justify-end px-6 pb-6">
         <el-pagination
           :current-page="currentPage"
           :page-size="pageSize"
@@ -343,7 +388,7 @@ onMounted(() => {
             <el-descriptions-item label="适用范围" :span="2">
               {{ currentPromotion.scopeText || '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="参与人数">
+            <el-descriptions-item label="参与人次">
               {{ currentPromotion.participantCount }}
             </el-descriptions-item>
             <el-descriptions-item label="订单数">
@@ -357,12 +402,9 @@ onMounted(() => {
             </el-descriptions-item>
           </el-descriptions>
 
-          <FaCard>
-            <p class="mb-2 text-sm text-stone-500">
-              活动说明
-            </p>
-            <p class="text-sm text-stone-700 leading-6">
-              {{ currentPromotion.description || '暂无说明' }}
+          <FaCard class="admin-table-card">
+            <p class="admin-dialog-note">
+              {{ currentPromotion.description || '暂无活动说明' }}
             </p>
           </FaCard>
         </div>
@@ -370,3 +412,23 @@ onMounted(() => {
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.marketing-promotion-hero__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.marketing-promotion-hero__tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid rgb(226 232 240 / 0.9);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.78);
+  padding: 0 12px;
+  color: rgb(51 65 85);
+  font-size: 12px;
+}
+</style>

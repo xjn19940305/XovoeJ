@@ -65,5 +65,9 @@ declare namespace Api {
     interface TaskListParams extends PageParams {}
 
     interface RecordListParams extends PageParams {}
+
+    interface UpdateStatusRequest {
+      status: number
+    }
   }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using XovoeJ.Abstractions.Services;
 using XovoeJ.Entities;
 using XovoeJ.Persistence.PostgreSql;
 
@@ -28,8 +29,19 @@ namespace XovoeJ.Application.Services
             "admin.category.read",
             "admin.order",
             "admin.order.read",
+            "admin.payment",
+            "admin.payment.read",
+            "admin.payment.close",
             "admin.aftersale",
             "admin.aftersale.read",
+            "admin.asset.wallet",
+            "admin.asset.wallet.read",
+            "admin.asset.wallet-log",
+            "admin.asset.wallet-log.read",
+            "admin.asset.points",
+            "admin.asset.points.read",
+            "admin.asset.points-log",
+            "admin.asset.points-log.read",
             "admin.content",
             "admin.banner",
             "admin.banner.read",
@@ -66,11 +78,13 @@ namespace XovoeJ.Application.Services
 
         private UserManager<User> userManage = null!;
         private XovoeJDbContext dbContext = null!;
+        private IAssetAccountService assetAccountService = null!;
 
         public async Task Init(IServiceScope scope)
         {
             userManage = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             dbContext = scope.ServiceProvider.GetRequiredService<XovoeJDbContext>();
+            assetAccountService = scope.ServiceProvider.GetRequiredService<IAssetAccountService>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
 
             var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
@@ -88,6 +102,7 @@ namespace XovoeJ.Application.Services
 
             await CreateRole(roleManager);
             await CreateUser();
+            await assetAccountService.EnsureAllUserAssetsAsync();
             await SeedMallUserData();
             await SeedMarketingCenterData();
             await SeedMessageCenterData();
@@ -185,7 +200,7 @@ namespace XovoeJ.Application.Services
                 roleManager,
                 SuperAdminRoleName,
                 10,
-                "\u7cfb\u7edf\u5185\u7f6e\u7ba1\u7406\u5458\uff0c\u62e5\u6709\u6240\u6709\u6743\u9650");
+                "系统内置管理员，拥有所有权限");
             await EnsureRolePermissionsAsync(roleManager, role, ["*"]);
 
             await EnsureRoleExistsAsync(roleManager, FrontendUserRoleName, 30, FrontendUserRoleName);
@@ -234,13 +249,13 @@ namespace XovoeJ.Application.Services
 
             var orderPaidTemplate = new MessageTemplate
             {
-                Name = "\u8ba2\u5355\u652f\u4ed8\u6210\u529f\u901a\u77e5",
+                Name = "订单支付成功通知",
                 Code = "order_paid_email",
                 Channel = "email",
                 BusinessType = "order",
-                Subject = "\u8ba2\u5355\u652f\u4ed8\u6210\u529f",
-                ContentPreview = "\u60a8\u597d\uff0c\u8ba2\u5355 {{orderNo}} \u5df2\u652f\u4ed8\u6210\u529f\uff0c\u8bf7\u7559\u610f\u540e\u7eed\u53d1\u8d27\u901a\u77e5\u3002",
-                Description = "\u652f\u4ed8\u6210\u529f\u540e\u7684\u9ed8\u8ba4\u90ae\u4ef6\u6a21\u677f\u3002",
+                Subject = "订单支付成功",
+                ContentPreview = "您好，订单 {{orderNo}} 已支付成功，请留意后续发货通知。",
+                Description = "支付成功后的默认邮件模板。",
                 Status = 1,
                 CreatedAt = now.AddDays(-7),
                 UpdatedAt = now.AddDays(-2),
@@ -248,13 +263,13 @@ namespace XovoeJ.Application.Services
 
             var shipmentTemplate = new MessageTemplate
             {
-                Name = "\u53d1\u8d27\u901a\u77e5",
+                Name = "发货通知",
                 Code = "shipment_sms",
                 Channel = "sms",
                 BusinessType = "shipping",
-                Subject = "\u8ba2\u5355\u5df2\u53d1\u8d27",
-                ContentPreview = "\u8ba2\u5355 {{orderNo}} \u5df2\u53d1\u8d27\uff0c\u7269\u6d41\u5355\u53f7\uff1a{{trackingNo}}\u3002",
-                Description = "\u53d1\u8d27\u901a\u77e5\u7684\u9ed8\u8ba4\u77ed\u4fe1\u6a21\u677f\u3002",
+                Subject = "订单已发货",
+                ContentPreview = "订单 {{orderNo}} 已发货，物流单号：{{trackingNo}}。",
+                Description = "发货通知的默认短信模板。",
                 Status = 1,
                 CreatedAt = now.AddDays(-6),
                 UpdatedAt = now.AddDays(-1),
@@ -262,13 +277,13 @@ namespace XovoeJ.Application.Services
 
             var promotionTemplate = new MessageTemplate
             {
-                Name = "\u6d3b\u52a8\u5e7f\u64ad\u901a\u77e5",
+                Name = "活动广播通知",
                 Code = "campaign_in_app",
                 Channel = "inApp",
                 BusinessType = "marketing",
-                Subject = "\u9650\u65f6\u6d3b\u52a8\u4e0a\u7ebf",
-                ContentPreview = "\u65b0\u7684\u6d3b\u52a8\u5df2\u7ecf\u4e0a\u7ebf\uff0c\u5feb\u8fdb\u5165\u5e94\u7528\u9886\u53d6\u4f60\u7684\u4e13\u5c5e\u4f18\u60e0\u3002",
-                Description = "\u8425\u9500\u6d3b\u52a8\u5e7f\u64ad\u7684\u9ed8\u8ba4\u7ad9\u5185\u4fe1\u6a21\u677f\u3002",
+                Subject = "限时活动上线",
+                ContentPreview = "新的活动已经上线，快进入应用领取你的专属优惠。",
+                Description = "营销活动广播的默认站内信模板。",
                 Status = 0,
                 CreatedAt = now.AddDays(-5),
                 UpdatedAt = now.AddDays(-5),
@@ -278,7 +293,7 @@ namespace XovoeJ.Application.Services
 
             var paymentTask = new MessageTask
             {
-                Name = "\u652f\u4ed8\u6210\u529f\u6279\u91cf\u901a\u77e5",
+                Name = "支付成功批量通知",
                 Template = orderPaidTemplate,
                 Channel = orderPaidTemplate.Channel,
                 TriggerType = "order_paid",
@@ -363,7 +378,7 @@ namespace XovoeJ.Application.Services
                 dbContext.CouponTemplates.AddRange(
                     new CouponTemplate
                 {
-                    Name = "\u65b0\u4eba\u9996\u5355\u6ee1\u51cf\u5238",
+                    Name = "新人首单满减券",
                     Code = "NEW_USER_FULL_REDUCTION",
                     CouponType = 0,
                     DiscountType = 1,
@@ -374,7 +389,7 @@ namespace XovoeJ.Application.Services
                     UsedQuantity = 486,
                     Status = 1,
                     ReceiveLimit = 1,
-                    Description = "\u65b0\u4eba\u9996\u5355\u6ee1 99 \u51cf 20\uff0c\u7528\u4e8e\u63d0\u5347\u9996\u5355\u8f6c\u5316\u3002",
+                    Description = "新人首单满 99 减 20，用于提升首单转化。",
                     StartTime = now.AddDays(-30),
                     EndTime = now.AddDays(30),
                     CreatedAt = now.AddDays(-35),
@@ -382,7 +397,7 @@ namespace XovoeJ.Application.Services
                 },
                 new CouponTemplate
                 {
-                    Name = "\u4f1a\u5458\u65e5 9 \u6298\u5238",
+                    Name = "会员日 9 折券",
                     Code = "MEMBER_DAY_DISCOUNT",
                     CouponType = 1,
                     DiscountType = 0,
@@ -393,7 +408,7 @@ namespace XovoeJ.Application.Services
                     UsedQuantity = 410,
                     Status = 1,
                     ReceiveLimit = 2,
-                    Description = "\u4f1a\u5458\u65e5\u6d3b\u52a8\u4e13\u5c5e\u6298\u6263\u5238\uff0c\u9002\u7528\u4e8e\u6307\u5b9a\u4f1a\u5458\u5546\u54c1\u3002",
+                    Description = "会员日活动专属折扣券，适用于指定会员商品。",
                     StartTime = now.AddDays(-7),
                     EndTime = now.AddDays(10),
                     CreatedAt = now.AddDays(-10),
@@ -401,7 +416,7 @@ namespace XovoeJ.Application.Services
                 },
                 new CouponTemplate
                 {
-                    Name = "\u56de\u8d2d\u6fc0\u6d3b\u65e0\u95e8\u69db\u5238",
+                    Name = "回购激活无门槛券",
                     Code = "REBUY_DIRECT_COUPON",
                     CouponType = 2,
                     DiscountType = 1,
@@ -412,7 +427,7 @@ namespace XovoeJ.Application.Services
                     UsedQuantity = 1160,
                     Status = 2,
                     ReceiveLimit = 1,
-                    Description = "\u9488\u5bf9 30 \u5929\u672a\u4e0b\u5355\u7528\u6237\u7684\u53ec\u56de\u4f18\u60e0\u5238\u3002",
+                    Description = "针对 30 天未下单用户的召回优惠券。",
                     StartTime = now.AddDays(-45),
                     EndTime = now.AddDays(-5),
                     CreatedAt = now.AddDays(-50),
@@ -420,20 +435,67 @@ namespace XovoeJ.Application.Services
                 });
             }
 
+            if (!await dbContext.MemberLevelRewardRules.AnyAsync())
+            {
+                var couponIds = await dbContext.CouponTemplates
+                    .OrderBy(item => item.CreatedAt)
+                    .Select(item => item.Id)
+                    .Take(3)
+                    .ToListAsync();
+
+                if (couponIds.Count > 0)
+                {
+                    dbContext.MemberLevelRewardRules.AddRange(
+                        new MemberLevelRewardRule
+                        {
+                            LevelCode = "silver",
+                            LevelName = "银卡会员",
+                            CouponTemplateIdsJson = JsonConvert.SerializeObject(couponIds.Take(1).ToList()),
+                            Status = 1,
+                            Sort = 10,
+                            Description = "用户升级到银卡会员时自动发放欢迎券。",
+                            CreatedAt = now.AddDays(-3),
+                            UpdatedAt = now.AddDays(-1),
+                        },
+                        new MemberLevelRewardRule
+                        {
+                            LevelCode = "gold",
+                            LevelName = "金卡会员",
+                            CouponTemplateIdsJson = JsonConvert.SerializeObject(couponIds.Take(2).ToList()),
+                            Status = 1,
+                            Sort = 20,
+                            Description = "用户升级到金卡会员时自动发放双券奖励。",
+                            CreatedAt = now.AddDays(-3),
+                            UpdatedAt = now.AddDays(-1),
+                        },
+                        new MemberLevelRewardRule
+                        {
+                            LevelCode = "platinum",
+                            LevelName = "铂金会员",
+                            CouponTemplateIdsJson = JsonConvert.SerializeObject(couponIds),
+                            Status = 1,
+                            Sort = 30,
+                            Description = "用户升级到铂金会员时自动发放完整券包。",
+                            CreatedAt = now.AddDays(-3),
+                            UpdatedAt = now.AddDays(-1),
+                        });
+                }
+            }
+
             if (!await dbContext.PromotionActivities.AnyAsync())
             {
                 dbContext.PromotionActivities.AddRange(
                     new PromotionActivity
                 {
-                    Name = "\u6625\u5b63\u5927\u4fc3\u6ee1\u51cf",
+                    Name = "春季大促满减",
                     Type = 0,
-                    ScopeText = "\u5168\u573a\u5b9e\u7269\u5546\u54c1\uff08\u7279\u4ef7\u5546\u54c1\u9664\u5916\uff09",
+                    ScopeText = "全场实物商品（特价商品除外）",
                     Priority = 100,
                     Stackable = false,
                     OrderCount = 356,
                     ParticipantCount = 282,
                     Status = 1,
-                    Description = "\u5168\u573a\u6ee1 199 \u51cf 30\uff0c\u7ed3\u7b97\u65f6\u6309\u8ba2\u5355\u7ef4\u5ea6\u751f\u6548\u3002",
+                    Description = "全场满 199 减 30，结算时按订单维度生效。",
                     StartTime = now.AddDays(-5),
                     EndTime = now.AddDays(15),
                     CreatedAt = now.AddDays(-10),
@@ -441,15 +503,15 @@ namespace XovoeJ.Application.Services
                 },
                 new PromotionActivity
                 {
-                    Name = "\u7206\u6b3e\u7c7b\u76ee\u9650\u65f6\u6298\u6263",
+                    Name = "爆款类目限时折扣",
                     Type = 1,
-                    ScopeText = "\u5bb6\u5c45\u4e0e\u65e5\u7528\u7c7b\u76ee\u6307\u5b9a SKU",
+                    ScopeText = "家居与日用类目指定 SKU",
                     Priority = 90,
                     Stackable = true,
                     OrderCount = 198,
                     ParticipantCount = 164,
                     Status = 1,
-                    Description = "\u6307\u5b9a\u5546\u54c1\u5728\u6d3b\u52a8\u671f\u95f4\u6309\u4fc3\u9500\u4ef7\u7ed3\u7b97\uff0c\u53ef\u4e0e\u90e8\u5206\u4f1a\u5458\u6298\u6263\u53e0\u52a0\u3002",
+                    Description = "指定商品在活动期间按促销价结算，可与部分会员折扣叠加。",
                     StartTime = now.AddDays(-2),
                     EndTime = now.AddDays(5),
                     CreatedAt = now.AddDays(-6),
@@ -457,15 +519,15 @@ namespace XovoeJ.Application.Services
                 },
                 new PromotionActivity
                 {
-                    Name = "\u62a4\u80a4\u5957\u88c5\u4e70\u8d60",
+                    Name = "护肤套装买赠",
                     Type = 2,
-                    ScopeText = "\u62a4\u80a4\u5957\u88c5\u7ec4\u5408\u6ee1\u8d2d\u573a\u666f",
+                    ScopeText = "护肤套装组合满购场景",
                     Priority = 80,
                     Stackable = false,
                     OrderCount = 87,
                     ParticipantCount = 79,
                     Status = 0,
-                    Description = "\u8d2d\u4e70\u6307\u5b9a\u62a4\u80a4\u5957\u88c5\u5373\u53ef\u8d60\u9001\u8bd5\u7528\u88c5\uff0c\u5f85\u6d3b\u52a8\u5f00\u59cb\u540e\u751f\u6548\u3002",
+                    Description = "购买指定护肤套装即可赠送试用装，待活动开始后生效。",
                     StartTime = now.AddDays(3),
                     EndTime = now.AddDays(20),
                     CreatedAt = now.AddDays(-1),
@@ -700,15 +762,15 @@ namespace XovoeJ.Application.Services
                 new UserAddress
                 {
                     UserId = admin.Id,
-                    ConsigneeName = "\u7ba1\u7406\u5458",
+                    ConsigneeName = "管理员",
                     Mobile = "13800138000",
-                    Province = "\u4e0a\u6d77\u5e02",
-                    City = "\u4e0a\u6d77\u5e02",
-                    Area = "\u6d66\u4e1c\u65b0\u533a",
+                    Province = "上海市",
+                    City = "上海市",
+                    Area = "浦东新区",
                     RegionCode = "310115",
-                    DetailAddress = "\u5f20\u6c5f\u8def 88 \u53f7 XovoeJ \u7535\u5546\u4e2d\u5fc3",
+                    DetailAddress = "张江路 88 号 XovoeJ 电商中心",
                     PostalCode = "200120",
-                    Label = "\u516c\u53f8",
+                    Label = "公司",
                     IsDefault = true,
                     Sort = 100,
                     CreatedAt = DateTime.UtcNow.AddDays(-7),
@@ -792,11 +854,11 @@ namespace XovoeJ.Application.Services
                 dbContext.InviteRelations.AddRange(
                     new InviteRelation
                 {
-                    InviterName = "\u7c73\u6d1b",
-                    InviteeName = "\u5c0f\u827e",
+                    InviterName = "米洛",
+                    InviteeName = "小艾",
                     ReferralCode = "MILO-AVA",
                     Channel = "shareLink",
-                    AttributionSource = "\u9996\u9875\u5206\u4eab\u6a2a\u5e45",
+                    AttributionSource = "首页分享横幅",
                     TotalOrders = 3,
                     TotalRewardAmount = 88.00m,
                     Status = 1,
@@ -807,11 +869,11 @@ namespace XovoeJ.Application.Services
                 },
                 new InviteRelation
                 {
-                    InviterName = "\u7c73\u6d1b",
-                    InviteeName = "\u8bfa\u4e9a",
+                    InviterName = "米洛",
+                    InviteeName = "诺亚",
                     ReferralCode = "MILO-NOAH",
                     Channel = "inviteCode",
-                    AttributionSource = "\u7ed3\u7b97\u9875\u9080\u8bf7\u5165\u53e3",
+                    AttributionSource = "结算页邀请入口",
                     TotalOrders = 0,
                     TotalRewardAmount = 0m,
                     Status = 0,
@@ -822,11 +884,11 @@ namespace XovoeJ.Application.Services
                 },
                 new InviteRelation
                 {
-                    InviterName = "\u827e\u62c9",
-                    InviteeName = "\u5362\u5361\u65af",
+                    InviterName = "艾拉",
+                    InviteeName = "卢卡斯",
                     ReferralCode = "ELLA-LUCAS",
                     Channel = "campaign",
-                    AttributionSource = "\u6625\u5b63\u589e\u957f\u6d3b\u52a8",
+                    AttributionSource = "春季增长活动",
                     TotalOrders = 1,
                     TotalRewardAmount = 20.00m,
                     Status = 2,
@@ -842,10 +904,10 @@ namespace XovoeJ.Application.Services
                 dbContext.CommissionRecords.AddRange(
                     new CommissionRecord
                 {
-                    PromoterName = "\u7c73\u6d1b",
+                    PromoterName = "米洛",
                     OrderNo = "ORD-20260301-1001",
-                    RuleName = "\u9996\u5355\u5956\u52b1",
-                    SourceType = "\u9080\u8bf7\u9996\u5355",
+                    RuleName = "首单奖励",
+                    SourceType = "邀请首单",
                     CommissionRate = 10.00m,
                     EstimatedAmount = 36.80m,
                     SettledAmount = 36.80m,
@@ -856,10 +918,10 @@ namespace XovoeJ.Application.Services
                 },
                 new CommissionRecord
                 {
-                    PromoterName = "\u827e\u62c9",
+                    PromoterName = "艾拉",
                     OrderNo = "ORD-20260305-2008",
-                    RuleName = "\u6d3b\u52a8\u5956\u52b1",
-                    SourceType = "\u6d3b\u52a8\u8ba2\u5355",
+                    RuleName = "活动奖励",
+                    SourceType = "活动订单",
                     CommissionRate = 8.00m,
                     EstimatedAmount = 25.60m,
                     SettledAmount = 0m,
@@ -870,10 +932,10 @@ namespace XovoeJ.Application.Services
                 },
                 new CommissionRecord
                 {
-                    PromoterName = "\u8bfa\u4e9a",
+                    PromoterName = "诺亚",
                     OrderNo = "ORD-20260306-3002",
-                    RuleName = "\u9000\u6b3e\u56de\u9000",
-                    SourceType = "\u9000\u6b3e\u51b2\u56de",
+                    RuleName = "退款回退",
+                    SourceType = "退款冲回",
                     CommissionRate = 10.00m,
                     EstimatedAmount = 18.00m,
                     SettledAmount = 0m,

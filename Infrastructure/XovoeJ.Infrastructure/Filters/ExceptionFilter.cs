@@ -1,11 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using XovoeJ.Contracts.Common;
 
 namespace XovoeJ.Infrastructure.Filters
 {
@@ -13,28 +9,17 @@ namespace XovoeJ.Infrastructure.Filters
     {
         public Task OnExceptionAsync(ExceptionContext context)
         {
-            if (context.ExceptionHandled == false)
+            if (!context.ExceptionHandled)
             {
-                string msg = context.Exception.Message;
-                var exception = context.Exception;
-                var result = new ObjectResult(new ErrorResultModel
+                context.HttpContext.Response.Headers["X-Trace-Id"] = context.HttpContext.TraceIdentifier;
+                context.Result = new ObjectResult(ApiResponse.Fail<object?>(500000, context.Exception.Message))
                 {
-                    Code = context.Exception.GetType().Name,
-                    Message = exception.Message,
-                });
-                result.StatusCode = 500;
-                context.Result = result;
-
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                };
             }
-            context.ExceptionHandled = true; //异常已处理了
 
+            context.ExceptionHandled = true;
             return Task.CompletedTask;
         }
-    }
-    public class ErrorResultModel
-    {
-        public required string Message { get; set; }
-        public required string Code { get; set; }
-        public object? Data { get; set; }
     }
 }

@@ -41,12 +41,14 @@ declare namespace Api {
     }
 
     interface PermissionListResponse {
-      list: Permission[]
+      items: Permission[]
       total: number
+      page: number
+      pageSize: number
     }
 
     interface PermissionTreeResponse {
-      list: PermissionTree[]
+      items: PermissionTree[]
     }
   }
 }

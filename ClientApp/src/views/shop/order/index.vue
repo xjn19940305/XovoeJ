@@ -162,45 +162,45 @@ onMounted(() => {
 
 <template>
   <div class="shop-order-list">
-    <FaCard class="mb-4">
-      <div class="mb-4 flex items-center gap-2 text-base font-medium">
-        <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
-        <span>订单筛选</span>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            关键词
-          </div>
-          <el-input
-            v-model="searchForm.keyword"
-            placeholder="搜索订单号、用户名或手机号"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </div>
-        <div>
-          <div class="mb-2 text-sm text-gray-500">
-            订单状态
-          </div>
-          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
-            <el-option label="待付款" :value="0" />
-            <el-option label="待发货" :value="1" />
-            <el-option label="待收货" :value="2" />
-            <el-option label="已完成" :value="3" />
-            <el-option label="已取消" :value="4" />
-            <el-option label="退款中" :value="5" />
-          </el-select>
+    <FaCard class="search-card mb-4">
+      <div class="search-header">
+        <div class="search-title">
+          <FaIcon name="i-heroicons-solid:magnifying-glass" class="size-5" />
+          <span>订单筛选</span>
         </div>
       </div>
-      <div class="mt-4 flex gap-3">
+      <div class="search-body">
+        <div class="search-grid">
+          <div class="search-field">
+            <label class="search-label">关键字</label>
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索订单号、用户名或手机号"
+              clearable
+              @keyup.enter="handleSearch"
+            />
+          </div>
+          <div class="search-field">
+            <label class="search-label">订单状态</label>
+            <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="w-full">
+              <el-option label="待付款" :value="0" />
+              <el-option label="待发货" :value="1" />
+              <el-option label="待收货" :value="2" />
+              <el-option label="已完成" :value="3" />
+              <el-option label="已取消" :value="4" />
+              <el-option label="退款中" :value="5" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
         <FaButton @click="handleSearch">
           <template #icon>
             <FaIcon name="i-heroicons-solid:magnifying-glass" />
           </template>
           搜索
         </FaButton>
-        <FaButton @click="handleReset">
+        <FaButton class="search-reset-btn" @click="handleReset">
           <template #icon>
             <FaIcon name="i-heroicons-solid:arrow-path" />
           </template>

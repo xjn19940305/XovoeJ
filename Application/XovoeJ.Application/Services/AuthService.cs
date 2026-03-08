@@ -25,17 +25,20 @@ namespace XovoeJ.Application.Services
         private readonly XovoeJDbContext _dbContext;
         private readonly JwtOptions _jwtOptions;
         private readonly ILogger<AuthService> _logger;
+        private readonly IAssetAccountService _assetAccountService;
 
         public AuthService(
             UserManager<User> userManager,
             XovoeJDbContext dbContext,
             IOptions<JwtOptions> jwtOptions,
-            ILogger<AuthService> logger)
+            ILogger<AuthService> logger,
+            IAssetAccountService assetAccountService)
         {
             _userManager = userManager;
             _dbContext = dbContext;
             _jwtOptions = jwtOptions.Value;
             _logger = logger;
+            _assetAccountService = assetAccountService;
         }
 
         /// <summary>
@@ -125,6 +128,7 @@ namespace XovoeJ.Application.Services
 
             // 添加默认角色（前端用户）
             await _userManager.AddToRoleAsync(user, "前端用户");
+            await _assetAccountService.EnsureUserAssetsAsync(user.Id);
 
             // 生成Token（注册后自动登录）
             var (accessToken, refreshToken) = await GenerateTokensAsync(user);

@@ -69,7 +69,7 @@ namespace XovoeJ.Abstractions.Services
         /// <param name="orderId">订单ID</param>
         /// <param name="paymentMethod">支付方式</param>
         /// <returns></returns>
-        Task<bool> PayOrderAsync(string orderId, string paymentMethod);
+        Task<bool> PayOrderAsync(string orderId, string paymentMethod, string? paymentOrderId = null, string? paymentOrderNo = null, decimal? paidAmount = null);
 
         /// <summary>
         /// 发货（管理端）

@@ -4,8 +4,6 @@ using System.Security.Claims;
 using XovoeJ.Abstractions.Services;
 using XovoeJ.Api.Swaggers;
 using XovoeJ.Contracts.Order;
-using XovoeJ.EventBus.Abstractions;
-using XovoeJ.EventBus.Events;
 
 namespace XovoeJ.Api.Controllers
 {
@@ -21,16 +19,13 @@ namespace XovoeJ.Api.Controllers
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;
-        private readonly IEventBus _eventBus;
         private readonly ILogger<OrderController> _logger;
 
         public OrderController(
             IOrderService orderService,
-            IEventBus eventBus,
             ILogger<OrderController> logger)
         {
             _orderService = orderService;
-            _eventBus = eventBus;
             _logger = logger;
         }
 
@@ -52,15 +47,6 @@ namespace XovoeJ.Api.Controllers
 
                 // 提交订单
                 var order = await _orderService.SubmitOrderAsync(userId, request);
-
-                // 发布订单创建事件
-                await _eventBus.PublishAsync(new OrderCreatedEvent
-                {
-                    OrderId = order.Id,
-                    UserId = userId,
-                    OrderNo = order.OrderNo,
-                    TotalAmount = order.PayAmount
-                });
 
                 _logger.LogInformation("订单创建成功: OrderId={OrderId}, OrderNo={OrderNo}, UserId={UserId}",
                     order.Id, order.OrderNo, userId);
@@ -160,11 +146,6 @@ namespace XovoeJ.Api.Controllers
         }
 
         /// <summary>
-        /// 根据订单号获取订单
-        /// </summary>
-        /// <param name="orderNo">订单号</param>
-        /// <returns>订单详情</returns>
-        /// <summary>
         /// 获取订单物流信息
         /// </summary>
         /// <param name="orderId">订单ID</param>
@@ -257,15 +238,6 @@ namespace XovoeJ.Api.Controllers
                 {
                     return NotFound(new { message = "订单不存在" });
                 }
-
-                // 发布订单取消事件
-                await _eventBus.PublishAsync(new OrderCancelledEvent
-                {
-                    OrderId = orderId,
-                    OrderNo = order.OrderNo,
-                    Reason = request?.Reason ?? "用户取消",
-                    CancelledTime = DateTime.UtcNow
-                });
 
                 _logger.LogInformation("订单已取消: OrderId={OrderId}, UserId={UserId}", orderId, userId);
 

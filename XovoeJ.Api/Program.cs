@@ -145,7 +145,11 @@ builder.Services.AddAuthorization(config =>
 
 // Controllers
 builder.Services
-    .AddControllers(o => o.Filters.Add(typeof(ExceptionFilter)))
+    .AddControllers(o =>
+    {
+        o.Filters.Add(typeof(ApiResponseResultFilter));
+        o.Filters.Add(typeof(ExceptionFilter));
+    })
     .AddNewtonsoftJson(options =>
     {
         options.SerializerSettings.DateFormatHandling = Newtonsoft.Json.DateFormatHandling.IsoDateFormat;
@@ -346,7 +350,10 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IAssetAccountService, AssetAccountService>();
+builder.Services.AddScoped<IAssetLedgerService, AssetLedgerService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDictionaryService, DictionaryService>();
 builder.Services.AddMinioService(builder.Configuration);
 builder.Services.AddRabbitMQEventBus(builder.Configuration, "XovoeJ.Api");

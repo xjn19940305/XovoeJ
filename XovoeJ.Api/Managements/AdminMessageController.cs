@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XovoeJ.Api.Swaggers;
+using XovoeJ.Entities;
 using XovoeJ.Persistence.PostgreSql;
 
 namespace XovoeJ.Api.Managements
@@ -83,8 +84,8 @@ namespace XovoeJ.Api.Managements
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load message templates.");
-                return BadRequest(new { message = "Failed to load message templates." });
+                _logger.LogError(ex, "加载消息模板列表失败。");
+                return BadRequest(new { message = "加载消息模板列表失败。" });
             }
         }
 
@@ -114,15 +115,44 @@ namespace XovoeJ.Api.Managements
 
                 if (template == null)
                 {
-                    return NotFound(new { message = "Message template not found." });
+                    return NotFound(new { message = "消息模板不存在。" });
                 }
 
                 return Ok(template);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load message template detail: {TemplateId}", templateId);
-                return BadRequest(new { message = "Failed to load message template detail." });
+                _logger.LogError(ex, "加载消息模板详情失败：{TemplateId}", templateId);
+                return BadRequest(new { message = "加载消息模板详情失败。" });
+            }
+        }
+
+        [HttpPost("templates/{templateId}/status")]
+        public async Task<IActionResult> UpdateTemplateStatus(string templateId, [FromBody] UpdateMessageStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 2)
+                {
+                    return BadRequest(new { message = "消息模板状态不合法。" });
+                }
+
+                var template = await _dbContext.MessageTemplates.FirstOrDefaultAsync(item => item.Id == templateId);
+                if (template == null)
+                {
+                    return NotFound(new { message = "消息模板不存在。" });
+                }
+
+                template.Status = request.Status;
+                template.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "消息模板状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新消息模板状态失败：{TemplateId}", templateId);
+                return BadRequest(new { message = "更新消息模板状态失败。" });
             }
         }
 
@@ -191,8 +221,8 @@ namespace XovoeJ.Api.Managements
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load message tasks.");
-                return BadRequest(new { message = "Failed to load message tasks." });
+                _logger.LogError(ex, "加载消息任务列表失败。");
+                return BadRequest(new { message = "加载消息任务列表失败。" });
             }
         }
 
@@ -225,15 +255,84 @@ namespace XovoeJ.Api.Managements
 
                 if (task == null)
                 {
-                    return NotFound(new { message = "Message task not found." });
+                    return NotFound(new { message = "消息任务不存在。" });
                 }
 
                 return Ok(task);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load message task detail: {TaskId}", taskId);
-                return BadRequest(new { message = "Failed to load message task detail." });
+                _logger.LogError(ex, "加载消息任务详情失败：{TaskId}", taskId);
+                return BadRequest(new { message = "加载消息任务详情失败。" });
+            }
+        }
+
+        [HttpPost("tasks/{taskId}/send")]
+        public async Task<IActionResult> SendTask(string taskId)
+        {
+            try
+            {
+                var task = await _dbContext.MessageTasks
+                    .Include(item => item.Template)
+                    .Include(item => item.Records)
+                    .FirstOrDefaultAsync(item => item.Id == taskId);
+                if (task == null)
+                {
+                    return NotFound(new { message = "消息任务不存在。" });
+                }
+
+                if (task.Status == 2)
+                {
+                    return BadRequest(new { message = "消息任务已发送完成，无需重复执行。" });
+                }
+
+                if (task.TemplateId != null && task.Template?.Status != 1)
+                {
+                    return BadRequest(new { message = "关联模板未启用，无法执行发送。" });
+                }
+
+                var now = DateTime.UtcNow;
+                if (task.Records.Count == 0)
+                {
+                    _dbContext.MessageSendRecords.Add(new MessageSendRecord
+                    {
+                        TemplateId = task.TemplateId,
+                        TaskId = task.Id,
+                        Channel = task.Channel,
+                        Recipient = $"batch:{task.RecipientCount}",
+                        BusinessType = task.Template?.BusinessType,
+                        TraceId = $"msg-{Guid.NewGuid():N}"[..20],
+                        Status = 1,
+                        SentAt = now,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                    });
+                }
+                else
+                {
+                    foreach (var record in task.Records)
+                    {
+                        record.Status = 1;
+                        record.ErrorMessage = null;
+                        record.SentAt = now;
+                        record.UpdatedAt = now;
+                        record.TraceId ??= $"msg-{Guid.NewGuid():N}"[..20];
+                    }
+                }
+
+                task.SuccessCount = task.RecipientCount;
+                task.FailedCount = 0;
+                task.Status = 2;
+                task.SentAt = now;
+                task.UpdatedAt = now;
+
+                await _dbContext.SaveChangesAsync();
+                return Ok(new { message = "消息任务执行成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "执行消息任务失败：{TaskId}", taskId);
+                return BadRequest(new { message = "执行消息任务失败。" });
             }
         }
 
@@ -305,8 +404,8 @@ namespace XovoeJ.Api.Managements
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load message send records.");
-                return BadRequest(new { message = "Failed to load message send records." });
+                _logger.LogError(ex, "加载发送记录列表失败。");
+                return BadRequest(new { message = "加载发送记录列表失败。" });
             }
         }
 
@@ -340,17 +439,90 @@ namespace XovoeJ.Api.Managements
 
                 if (record == null)
                 {
-                    return NotFound(new { message = "Message send record not found." });
+                    return NotFound(new { message = "发送记录不存在。" });
                 }
 
                 return Ok(record);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load message send record detail: {RecordId}", recordId);
-                return BadRequest(new { message = "Failed to load message send record detail." });
+                _logger.LogError(ex, "加载发送记录详情失败：{RecordId}", recordId);
+                return BadRequest(new { message = "加载发送记录详情失败。" });
             }
         }
+
+        [HttpPost("records/{recordId}/retry")]
+        public async Task<IActionResult> RetryRecord(string recordId)
+        {
+            try
+            {
+                var record = await _dbContext.MessageSendRecords
+                    .Include(item => item.Template)
+                    .Include(item => item.Task)
+                    .FirstOrDefaultAsync(item => item.Id == recordId);
+                if (record == null)
+                {
+                    return NotFound(new { message = "发送记录不存在。" });
+                }
+
+                if (record.Status == 1)
+                {
+                    return BadRequest(new { message = "该发送记录已送达，无需重试。" });
+                }
+
+                if (record.TemplateId != null && record.Template?.Status != 1)
+                {
+                    return BadRequest(new { message = "关联模板未启用，无法重试发送。" });
+                }
+
+                var now = DateTime.UtcNow;
+                record.Status = 1;
+                record.ErrorMessage = null;
+                record.SentAt = now;
+                record.UpdatedAt = now;
+                record.TraceId ??= $"msg-{Guid.NewGuid():N}"[..20];
+
+                if (record.TaskId != null)
+                {
+                    var relatedRecords = await _dbContext.MessageSendRecords
+                        .Where(item => item.TaskId == record.TaskId)
+                        .ToListAsync();
+
+                    var successCount = relatedRecords.Count(item => item.Status == 1);
+                    var failedCount = relatedRecords.Count(item => item.Status == 2);
+                    var pendingCount = relatedRecords.Count(item => item.Status == 0);
+
+                    if (record.Task != null)
+                    {
+                        record.Task.SuccessCount = successCount;
+                        record.Task.FailedCount = failedCount;
+                        record.Task.Status = failedCount > 0
+                            ? 3
+                            : pendingCount > 0
+                                ? 1
+                                : 2;
+                        if (record.Task.Status == 2)
+                        {
+                            record.Task.SentAt ??= now;
+                        }
+                        record.Task.UpdatedAt = now;
+                    }
+                }
+
+                await _dbContext.SaveChangesAsync();
+                return Ok(new { message = "发送记录重试成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "重试发送记录失败：{RecordId}", recordId);
+                return BadRequest(new { message = "发送记录重试失败。" });
+            }
+        }
+    }
+
+    public sealed class UpdateMessageStatusRequest
+    {
+        public int Status { get; set; }
     }
 
     public sealed class MessageTemplateDto

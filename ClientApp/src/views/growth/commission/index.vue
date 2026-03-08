@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import growthApi from '@/api/modules/growth'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'GrowthCommissionPage',
@@ -39,26 +41,30 @@ const summaryCards = computed(() => [
   {
     title: '佣金记录',
     value: total.value,
+    description: '当前查询范围内的佣金记录总量，用于观察分销结算压力。',
     icon: 'i-heroicons-solid:banknotes',
-    tone: 'bg-primary/8 text-primary',
+    tone: 'blue' as const,
   },
   {
     title: '当前页预估佣金',
     value: formatAmount(tableData.value.reduce((sum, item) => sum + (item.estimatedAmount || 0), 0)),
+    description: '代表本页数据的潜在待结算规模，便于预估资金占用。',
     icon: 'i-heroicons-solid:scale',
-    tone: 'bg-amber-500/10 text-amber-600',
+    tone: 'amber' as const,
   },
   {
     title: '当前页已结算',
     value: formatAmount(tableData.value.reduce((sum, item) => sum + (item.settledAmount || 0), 0)),
+    description: '用于查看结算执行结果，判断结算进度是否顺畅。',
     icon: 'i-heroicons-solid:check-badge',
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    tone: 'emerald' as const,
   },
   {
-    title: '当前页已结算笔数',
+    title: '已结算笔数',
     value: tableData.value.filter(item => item.status === 2).length,
+    description: '与预估佣金结合观察结算效率和积压情况。',
     icon: 'i-heroicons-solid:receipt-percent',
-    tone: 'bg-sky-500/10 text-sky-600',
+    tone: 'sky' as const,
   },
 ])
 
@@ -105,6 +111,18 @@ async function handleViewDetail(row: Api.Growth.CommissionRecord) {
   }
 }
 
+async function handleSettle(row: Api.Growth.CommissionRecord) {
+  await ElMessageBox.confirm(
+    `确认将佣金记录 ${row.orderNo || row.id} 结算为 ${formatAmount(row.estimatedAmount || 0)} 吗？`,
+    '佣金结算',
+    { type: 'warning' },
+  )
+
+  await growthApi.settleCommission(row.id)
+  ElMessage.success('佣金结算成功')
+  await getCommissionList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getCommissionList()
@@ -117,7 +135,7 @@ function handleSizeChange(size: number) {
 }
 
 function formatAmount(value: number) {
-  return `￥${value.toFixed(2)}`
+  return `¥ ${value.toFixed(2)}`
 }
 
 function formatRate(value: number) {
@@ -132,24 +150,16 @@ onMounted(() => {
 <template>
   <div class="growth-commission-page">
     <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <FaCard
+      <AdminMetricCard
         v-for="card in summaryCards"
         :key="card.title"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
     <FaCard class="search-card mb-4">
@@ -162,10 +172,10 @@ onMounted(() => {
       <div class="search-body">
         <div class="search-grid">
           <div class="search-field">
-            <label class="search-label">关键字</label>
+            <label class="search-label">关键词</label>
             <el-input
               v-model="searchForm.keyword"
-              placeholder="搜索推广人、订单号或规则"
+              placeholder="搜索推广人、订单号或规则名称"
               clearable
             >
               <template #prefix>
@@ -207,7 +217,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <div>
             <span class="font-medium">佣金结算</span>
-            <span class="ml-2 text-sm text-stone-500">第 6 阶段增长中心</span>
+            <span class="ml-2 text-sm text-stone-500">增长中心 / 佣金管理</span>
           </div>
           <FaButton variant="ghost" @click="getCommissionList">
             <template #icon>
@@ -218,10 +228,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-      >
+      <el-table v-loading="loading" :data="tableData">
         <el-table-column label="推广人" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.promoterName || '-' }}
@@ -260,7 +267,7 @@ onMounted(() => {
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="statusMap[row.status]?.type || 'info'" size="small">
-              {{ statusMap[row.status]?.label || '未知' }}
+              {{ statusMap[row.status]?.label || '未知状态' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -271,12 +278,14 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:eye" />
-              </template>
-              详情
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton v-if="row.status === 1" size="sm" @click="handleSettle(row)">
+                结算
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                详情
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -294,11 +303,7 @@ onMounted(() => {
       </div>
     </FaCard>
 
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="佣金详情"
-      width="720px"
-    >
+    <el-dialog v-model="detailDialogVisible" title="佣金详情" width="720px">
       <div v-loading="detailLoading">
         <el-empty v-if="!currentCommission" description="暂无佣金数据" />
         <div v-else class="space-y-4">
@@ -319,7 +324,7 @@ onMounted(() => {
               {{ formatRate(currentCommission.commissionRate || 0) }}
             </el-descriptions-item>
             <el-descriptions-item label="状态">
-              {{ statusMap[currentCommission.status]?.label || '未知' }}
+              {{ statusMap[currentCommission.status]?.label || '未知状态' }}
             </el-descriptions-item>
             <el-descriptions-item label="预估佣金">
               {{ formatAmount(currentCommission.estimatedAmount || 0) }}

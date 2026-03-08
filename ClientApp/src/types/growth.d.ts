@@ -73,5 +73,9 @@ declare namespace Api {
     }
 
     interface CommissionListParams extends PageParams {}
+
+    interface UpdateStatusRequest {
+      status: number
+    }
   }
 }

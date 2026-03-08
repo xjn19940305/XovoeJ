@@ -15,6 +15,9 @@ export default {
   // 更新工作流定义
   updateDefinition: (code: string, data: Api.Workflow.CreateWorkflowDefinitionRequest) => api.put<Api.Workflow.WorkflowDefinition>(buildAdminApiPath(`workflow/definitions/${code}`), data),
 
+  // 更新工作流状态
+  updateDefinitionStatus: (code: string, data: Api.Workflow.UpdateWorkflowDefinitionStatusRequest) => api.post(buildAdminApiPath(`workflow/definitions/${code}/status`), data),
+
   // 删除工作流定义
   deleteDefinition: (code: string) => api.delete(buildAdminApiPath(`workflow/definitions/${code}`)),
 
@@ -33,7 +36,7 @@ export default {
     page?: number
     pageSize?: number
   }) => api.get<{
-    data: Api.Workflow.WorkflowInstance[]
+    items: Api.Workflow.WorkflowInstance[]
     total: number
     page: number
     pageSize: number

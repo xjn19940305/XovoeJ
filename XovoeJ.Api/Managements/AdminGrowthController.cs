@@ -124,6 +124,35 @@ namespace XovoeJ.Api.Managements
             }
         }
 
+        [HttpPost("distributions/{distributionId}/status")]
+        public async Task<IActionResult> UpdateDistributionStatus(string distributionId, [FromBody] UpdateGrowthStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 2)
+                {
+                    return BadRequest(new { message = "分销关系状态不合法。" });
+                }
+
+                var relation = await _dbContext.InviteRelations.FirstOrDefaultAsync(item => item.Id == distributionId);
+                if (relation == null)
+                {
+                    return NotFound(new { message = "分销关系不存在。" });
+                }
+
+                relation.Status = request.Status;
+                relation.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "分销关系状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新分销关系状态失败：{DistributionId}", distributionId);
+                return BadRequest(new { message = "更新分销关系状态失败。" });
+            }
+        }
+
         [HttpGet("referral-links")]
         public async Task<IActionResult> GetReferralLinks(
             [FromQuery] int page = 1,
@@ -244,6 +273,35 @@ namespace XovoeJ.Api.Managements
             }
         }
 
+        [HttpPost("referral-links/{linkId}/status")]
+        public async Task<IActionResult> UpdateReferralLinkStatus(string linkId, [FromBody] UpdateGrowthStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 2)
+                {
+                    return BadRequest(new { message = "推广链接状态不合法。" });
+                }
+
+                var link = await _dbContext.ReferralLinks.FirstOrDefaultAsync(item => item.Id == linkId);
+                if (link == null)
+                {
+                    return NotFound(new { message = "推广链接不存在。" });
+                }
+
+                link.Status = request.Status;
+                link.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "推广链接状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新推广链接状态失败：{LinkId}", linkId);
+                return BadRequest(new { message = "更新推广链接状态失败。" });
+            }
+        }
+
         [HttpGet("commissions")]
         public async Task<IActionResult> GetCommissions(
             [FromQuery] int page = 1,
@@ -343,6 +401,52 @@ namespace XovoeJ.Api.Managements
                 return BadRequest(new { message = "加载佣金记录详情失败。" });
             }
         }
+
+        [HttpPost("commissions/{commissionId}/settle")]
+        public async Task<IActionResult> SettleCommission(string commissionId)
+        {
+            try
+            {
+                var record = await _dbContext.CommissionRecords.FirstOrDefaultAsync(item => item.Id == commissionId);
+                if (record == null)
+                {
+                    return NotFound(new { message = "佣金记录不存在。" });
+                }
+
+                if (record.Status == 2)
+                {
+                    return BadRequest(new { message = "该佣金记录已完成结算。" });
+                }
+
+                if (record.Status == 3)
+                {
+                    return BadRequest(new { message = "已回退的佣金记录不可结算。" });
+                }
+
+                if (record.Status != 1)
+                {
+                    return BadRequest(new { message = "当前佣金记录还不可结算。" });
+                }
+
+                record.Status = 2;
+                record.SettledAmount = record.EstimatedAmount;
+                record.SettledAt = DateTime.UtcNow;
+                record.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "佣金结算成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "结算佣金失败：{CommissionId}", commissionId);
+                return BadRequest(new { message = "佣金结算失败。" });
+            }
+        }
+    }
+
+    public sealed class UpdateGrowthStatusRequest
+    {
+        public int Status { get; set; }
     }
 
     public sealed class DistributionDto

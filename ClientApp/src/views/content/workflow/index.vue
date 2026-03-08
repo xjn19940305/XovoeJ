@@ -8,16 +8,13 @@ defineOptions({
   name: 'ContentWorkflow',
 })
 
-// 搜索表单
 const searchForm = ref({
   type: '',
 })
 
-// 表格数据
 const tableData = ref<Api.Workflow.WorkflowDefinition[]>([])
 const loading = ref(false)
 
-// 对话框
 const dialogVisible = ref(false)
 const dialogTitle = ref('创建工作流')
 const dialogLoading = ref(false)
@@ -28,10 +25,8 @@ const formData = ref<Api.Workflow.CreateWorkflowDefinitionRequest>({
   steps: [],
 })
 
-// 当前编辑的工作流编码
 const editingCode = ref<string>()
 
-// 步骤编辑器
 const stepEditorVisible = ref(false)
 const editingStepIndex = ref<number>()
 const stepFormRef = ref<FormInstance>()
@@ -46,26 +41,23 @@ const stepFormData = ref<Api.Workflow.WorkflowStepDefinition>({
   allowWithdraw: true,
 })
 
-// 表单验证规则
 const rules: FormRules = {
   name: [
     { required: true, message: '请输入工作流名称', trigger: 'blur' },
-    { max: 128, message: '工作流名称长度不能超过128个字符', trigger: 'blur' },
+    { max: 128, message: '工作流名称长度不能超过 128 个字符', trigger: 'blur' },
   ],
   type: [
     { required: true, message: '请输入工作流类型', trigger: 'blur' },
-    { max: 64, message: '工作流类型长度不能超过64个字符', trigger: 'blur' },
+    { max: 64, message: '工作流类型长度不能超过 64 个字符', trigger: 'blur' },
   ],
 }
 
-// 步骤表单验证规则
 const stepRules: FormRules = {
   name: [
     { required: true, message: '请输入步骤名称', trigger: 'blur' },
   ],
 }
 
-// 枚举选项
 const stepTypeOptions = [
   { label: '审批节点', value: 1 },
   { label: '抄送节点', value: 2 },
@@ -78,7 +70,7 @@ const approverTypeOptions = [
   { label: '指定用户', value: 1 },
   { label: '指定角色', value: 2 },
   { label: '部门主管', value: 3 },
-  { label: '发起人的直属领导', value: 4 },
+  { label: '直属领导', value: 4 },
   { label: '动态选择', value: 5 },
   { label: '自选审批人', value: 6 },
 ]
@@ -97,7 +89,6 @@ const timeoutActionOptions = [
   { label: '转交上级', value: 4 },
 ]
 
-// 获取工作流定义列表
 async function getDefinitionList() {
   loading.value = true
   try {
@@ -112,30 +103,27 @@ async function getDefinitionList() {
   }
 }
 
-// 搜索
 function handleSearch() {
   getDefinitionList()
 }
 
-// 重置搜索
 function handleReset() {
   searchForm.value.type = ''
   getDefinitionList()
 }
 
-// 打开创建对话框
 function handleCreate() {
   dialogTitle.value = '创建工作流'
   editingCode.value = undefined
   formData.value = {
     name: '',
     type: '',
+    description: '',
     steps: [],
   }
   dialogVisible.value = true
 }
 
-// 打开编辑对话框
 async function handleEdit(row: Api.Workflow.WorkflowDefinition) {
   dialogTitle.value = '编辑工作流'
   dialogLoading.value = true
@@ -149,6 +137,7 @@ async function handleEdit(row: Api.Workflow.WorkflowDefinition) {
       description: data.description,
       type: data.type,
       steps: data.steps || [],
+      formConfig: data.formConfig,
     }
   }
   finally {
@@ -156,7 +145,6 @@ async function handleEdit(row: Api.Workflow.WorkflowDefinition) {
   }
 }
 
-// 删除工作流
 async function handleDelete(code: string) {
   await ElMessageBox.confirm('确定要删除该工作流吗？删除后不可恢复。', '提示', {
     type: 'warning',
@@ -166,28 +154,24 @@ async function handleDelete(code: string) {
   getDefinitionList()
 }
 
-// 切换启用状态
 async function handleToggleEnabled(row: Api.Workflow.WorkflowDefinition) {
-  // 需要后端提供单独的启用/禁用接口，这里先通过更新实现
-  const action = row.isEnabled ? '禁用' : '启用'
-  try {
-    await ElMessageBox.confirm(`确定要${action}该工作流吗？`, '提示', { type: 'warning' })
-    // 这里需要调用更新接口，暂时只在前端更新显示
-    row.isEnabled = !row.isEnabled
-    ElMessage.success(`${action}成功`)
-  }
-  catch {
-    // 用户取消
-  }
+  const nextEnabled = !row.isEnabled
+  const action = nextEnabled ? '启用' : '禁用'
+  await ElMessageBox.confirm(`确定要${action}该工作流吗？`, '提示', {
+    type: 'warning',
+  })
+  await workflowApi.updateDefinitionStatus(row.code, { isEnabled: nextEnabled })
+  ElMessage.success(`${action}成功`)
+  getDefinitionList()
 }
 
-// 提交表单
 async function handleSubmit() {
   await formRef.value?.validate()
   if (formData.value.steps.length === 0) {
     ElMessage.warning('请至少添加一个步骤')
     return
   }
+
   dialogLoading.value = true
   try {
     if (editingCode.value) {
@@ -206,14 +190,12 @@ async function handleSubmit() {
   }
 }
 
-// ========== 步骤管理 ==========
-
-// 打开添加步骤对话框
 function handleAddStep() {
   editingStepIndex.value = undefined
   stepFormData.value = {
     id: `step_${Date.now()}`,
     name: '',
+    description: '',
     type: 1,
     approverType: 1,
     approverIds: [],
@@ -224,23 +206,23 @@ function handleAddStep() {
   stepEditorVisible.value = true
 }
 
-// 打开编辑步骤对话框
 function handleEditStep(index: number) {
   editingStepIndex.value = index
-  stepFormData.value = { ...formData.value.steps[index] }
+  const step = formData.value.steps[index]
+  stepFormData.value = {
+    ...step,
+    approverIds: [...step.approverIds],
+  }
   stepEditorVisible.value = true
 }
 
-// 删除步骤
 function handleDeleteStep(index: number) {
   formData.value.steps.splice(index, 1)
-  // 更新步骤顺序
   formData.value.steps.forEach((step, i) => {
     step.order = i + 1
   })
 }
 
-// 上移步骤
 function handleMoveUpStep(index: number) {
   if (index === 0) {
     return
@@ -248,12 +230,10 @@ function handleMoveUpStep(index: number) {
   const temp = formData.value.steps[index]
   formData.value.steps[index] = formData.value.steps[index - 1]
   formData.value.steps[index - 1] = temp
-  // 更新顺序
   formData.value.steps[index].order = index + 1
   formData.value.steps[index - 1].order = index
 }
 
-// 下移步骤
 function handleMoveDownStep(index: number) {
   if (index === formData.value.steps.length - 1) {
     return
@@ -261,24 +241,21 @@ function handleMoveDownStep(index: number) {
   const temp = formData.value.steps[index]
   formData.value.steps[index] = formData.value.steps[index + 1]
   formData.value.steps[index + 1] = temp
-  // 更新顺序
   formData.value.steps[index].order = index + 1
   formData.value.steps[index + 1].order = index + 2
 }
 
-// 保存步骤
 async function handleSaveStep() {
   await stepFormRef.value?.validate()
   if (editingStepIndex.value === undefined) {
-    formData.value.steps.push({ ...stepFormData.value })
+    formData.value.steps.push({ ...stepFormData.value, approverIds: [...stepFormData.value.approverIds] })
   }
   else {
-    formData.value.steps[editingStepIndex.value] = { ...stepFormData.value }
+    formData.value.steps[editingStepIndex.value] = { ...stepFormData.value, approverIds: [...stepFormData.value.approverIds] }
   }
   stepEditorVisible.value = false
 }
 
-// 获取步骤类型标签
 function getStepTypeLabel(type: Api.Workflow.WorkflowStepType): string {
   const map = {
     1: '审批',
@@ -290,7 +267,6 @@ function getStepTypeLabel(type: Api.Workflow.WorkflowStepType): string {
   return map[type] || '未知'
 }
 
-// 获取审批人类型标签
 function getApproverTypeLabel(type: Api.Workflow.ApproverType): string {
   const map = {
     1: '指定用户',
@@ -303,7 +279,6 @@ function getApproverTypeLabel(type: Api.Workflow.ApproverType): string {
   return map[type] || '未知'
 }
 
-// 获取审批规则标签
 function getApprovalRuleLabel(rule: Api.Workflow.ApprovalRule): string {
   const map = {
     1: '全部同意',
@@ -321,7 +296,6 @@ onMounted(() => {
 
 <template>
   <div class="content-workflow p-4">
-    <!-- 搜索表单 -->
     <FaCard class="search-card mb-4">
       <div class="search-header">
         <div class="search-title">
@@ -361,7 +335,6 @@ onMounted(() => {
       </div>
     </FaCard>
 
-    <!-- 操作按钮 -->
     <div class="mb-4 flex items-center justify-between">
       <div class="flex gap-2">
         <FaButton @click="handleCreate">
@@ -373,7 +346,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 表格 -->
     <FaCard>
       <el-table
         v-loading="loading"
@@ -427,7 +399,6 @@ onMounted(() => {
       </el-table>
     </FaCard>
 
-    <!-- 创建/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
@@ -451,7 +422,6 @@ onMounted(() => {
           <el-input v-model="formData.description" type="textarea" :rows="2" placeholder="请输入工作流描述" />
         </el-form-item>
 
-        <!-- 步骤配置 -->
         <el-form-item label="审批步骤">
           <div class="w-full">
             <div class="mb-2 flex items-center justify-between">
@@ -485,7 +455,7 @@ onMounted(() => {
                       {{ getApproverTypeLabel(step.approverType) }}
                     </span>
                     <span v-if="step.approverIds.length" class="ml-2 text-xs text-gray-500">
-                      ({{ step.approverIds.length }}人)
+                      ({{ step.approverIds.length }} 人)
                     </span>
                     <span class="ml-2 text-xs text-gray-500">
                       {{ getApprovalRuleLabel(step.approvalRule) }}
@@ -509,7 +479,7 @@ onMounted(() => {
               </div>
               <div v-if="formData.steps.length === 0" class="step-empty">
                 <p class="text-gray-400">
-                  暂无审批步骤，请点击"添加步骤"按钮添加
+                  暂无审批步骤，请点击“添加步骤”按钮添加
                 </p>
               </div>
             </div>
@@ -526,7 +496,6 @@ onMounted(() => {
       </template>
     </el-dialog>
 
-    <!-- 步骤编辑对话框 -->
     <el-dialog
       v-model="stepEditorVisible"
       :title="editingStepIndex === undefined ? '添加步骤' : '编辑步骤'"
@@ -565,18 +534,16 @@ onMounted(() => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="[1, 2].includes(stepFormData.approverType)" label="审批人ID">
+        <el-form-item v-if="[1, 2].includes(stepFormData.approverType)" label="审批人 ID">
           <el-select
             v-model="stepFormData.approverIds"
             multiple
             filterable
             allow-create
-            placeholder="请输入审批人ID（支持多选）"
+            placeholder="请输入审批人 ID，支持多选"
             class="w-full"
-          >
-            <!-- 这里可以改成从后端获取用户/角色列表 -->
-          </el-select>
-          <span class="text-xs text-gray-500">多个审批人ID用逗号分隔或从下拉选择</span>
+          />
+          <span class="text-xs text-gray-500">多个审批人可直接输入并回车确认</span>
         </el-form-item>
         <el-form-item label="审批规则">
           <el-select v-model="stepFormData.approvalRule" placeholder="请选择审批规则" class="w-full">

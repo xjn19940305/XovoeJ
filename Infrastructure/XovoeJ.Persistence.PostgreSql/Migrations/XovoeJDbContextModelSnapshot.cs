@@ -158,6 +158,78 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.ToTable("after_sale_orders");
                 });
 
+            modelBuilder.Entity("XovoeJ.Entities.Banner", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_time");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("image_url");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("LinkUrl")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("link_url");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime?>("StartTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_time");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("subtitle");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("EndTime");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.HasIndex("SortOrder");
+
+                    b.HasIndex("StartTime");
+
+                    b.ToTable("banners");
+                });
+
             modelBuilder.Entity("XovoeJ.Entities.BargainActivity", b =>
                 {
                     b.Property<string>("Id")
@@ -388,6 +460,132 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("commission_records");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.CouponIssueBatch", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CouponTemplateIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("coupon_template_ids_json");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_count");
+
+                    b.Property<int>("RequestedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("requested_count");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("SucceededCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("succeeded_count");
+
+                    b.Property<string>("TargetMemberLevelsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("target_member_levels_json");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("target_type");
+
+                    b.Property<string>("TargetUserIdsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("target_user_ids_json");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TargetType");
+
+                    b.ToTable("coupon_issue_batches");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.CouponIssueRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BatchId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("batch_id");
+
+                    b.Property<string>("CouponTemplateId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("coupon_template_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("UserCouponId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_coupon_id");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("CouponTemplateId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserCouponId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("coupon_issue_records");
                 });
 
             modelBuilder.Entity("XovoeJ.Entities.CouponTemplate", b =>
@@ -852,6 +1050,62 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.ToTable("invite_relations");
                 });
 
+            modelBuilder.Entity("XovoeJ.Entities.MemberLevelRewardRule", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CouponTemplateIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("coupon_template_ids_json");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("LevelCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("level_code");
+
+                    b.Property<string>("LevelName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("level_name");
+
+                    b.Property<int>("Sort")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LevelCode")
+                        .IsUnique();
+
+                    b.HasIndex("Sort");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("member_level_reward_rules");
+                });
+
             modelBuilder.Entity("XovoeJ.Entities.MessageSendRecord", b =>
                 {
                     b.Property<string>("Id")
@@ -1098,6 +1352,16 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("consignee_name");
 
+                    b.Property<string>("CouponName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("coupon_name");
+
+                    b.Property<string>("CouponTemplateId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("coupon_template_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1163,14 +1427,45 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("pay_time");
 
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("payment_method");
+
+                    b.Property<string>("PaymentOrderId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("payment_order_id");
+
+                    b.Property<string>("PaymentOrderNo")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("payment_order_no");
+
+                    b.Property<decimal>("PointsDeductionAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("points_deduction_amount");
+
+                    b.Property<int>("PointsUsed")
+                        .HasColumnType("integer")
+                        .HasColumnName("points_used");
+
                     b.Property<DateTime?>("ReceiveTime")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("receive_time");
+
+                    b.Property<decimal>("RefundedAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("refunded_amount");
 
                     b.Property<string>("Remark")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("remark");
+
+                    b.Property<int>("RewardPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("reward_points");
 
                     b.Property<int>("ShipStatus")
                         .HasColumnType("integer")
@@ -1207,11 +1502,20 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("UserCouponId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_coupon_id");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("user_id");
+
+                    b.Property<decimal>("WalletPayAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("wallet_pay_amount");
 
                     b.HasKey("Id");
 
@@ -1221,6 +1525,8 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
 
                     b.HasIndex("OrderNo")
                         .IsUnique();
+
+                    b.HasIndex("PaymentOrderNo");
 
                     b.HasIndex("Status");
 
@@ -1291,6 +1597,248 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("order_items");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.PaymentOrder", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ExpireAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expire_at");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<string>("OrderId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("OrderNo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_no");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("paid_amount");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<decimal>("PayableAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("payable_amount");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("payment_method");
+
+                    b.Property<string>("PaymentOrderNo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("payment_order_no");
+
+                    b.Property<decimal>("RefundedAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("refunded_amount");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ExpireAt");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("OrderNo");
+
+                    b.HasIndex("PaymentOrderNo")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("payment_orders");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.PointsAccount", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AvailablePoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("available_points");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("FrozenPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("frozen_points");
+
+                    b.Property<DateTime?>("LastChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_changed_at");
+
+                    b.Property<int>("TotalEarnedPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_earned_points");
+
+                    b.Property<int>("TotalSpentPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_spent_points");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("LastChangedAt");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("points_accounts");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.PointsLog", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AfterAvailablePoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("after_available_points");
+
+                    b.Property<int>("AfterFrozenPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("after_frozen_points");
+
+                    b.Property<int>("BeforeAvailablePoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("before_available_points");
+
+                    b.Property<int>("BeforeFrozenPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("before_frozen_points");
+
+                    b.Property<string>("BusinessNo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("business_no");
+
+                    b.Property<string>("BusinessType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("business_type");
+
+                    b.Property<int>("ChangeAvailablePoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("change_available_points");
+
+                    b.Property<int>("ChangeFrozenPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("change_frozen_points");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("direction");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("PointsAccountId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("points_account_id");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessNo");
+
+                    b.HasIndex("BusinessType");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("PointsAccountId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("points_logs");
                 });
 
             modelBuilder.Entity("XovoeJ.Entities.Product", b =>
@@ -1959,6 +2507,9 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CurrentMemberLevelCode")
+                        .HasColumnType("text");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -2019,8 +2570,14 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.Property<string>("RealName")
                         .HasColumnType("text");
 
+                    b.Property<string>("RewardedMemberLevelCode")
+                        .HasColumnType("text");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
+
+                    b.Property<decimal>("TotalSpentAmount")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
@@ -2160,6 +2717,112 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.ToTable("AspNetUserClaims", (string)null);
                 });
 
+            modelBuilder.Entity("XovoeJ.Entities.UserCoupon", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("ClaimedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at");
+
+                    b.Property<string>("CouponTemplateId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("coupon_template_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ExpiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expired_at");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<string>("OrderId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("OrderNo")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_no");
+
+                    b.Property<int>("SnapshotCouponType")
+                        .HasColumnType("integer")
+                        .HasColumnName("snapshot_coupon_type");
+
+                    b.Property<int>("SnapshotDiscountType")
+                        .HasColumnType("integer")
+                        .HasColumnName("snapshot_discount_type");
+
+                    b.Property<decimal>("SnapshotDiscountValue")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("snapshot_discount_value");
+
+                    b.Property<decimal>("SnapshotMinOrderAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("snapshot_min_order_amount");
+
+                    b.Property<string>("SnapshotName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("snapshot_name");
+
+                    b.Property<string>("SourceReference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("source_reference");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("source_type");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CouponTemplateId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("user_coupons");
+                });
+
             modelBuilder.Entity("XovoeJ.Entities.UserLogin", b =>
                 {
                     b.Property<string>("LoginProvider")
@@ -2220,6 +2883,151 @@ namespace XovoeJ.Persistence.PostgreSql.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.WalletAccount", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AvailableBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("available_balance");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("FrozenBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("frozen_balance");
+
+                    b.Property<DateTime?>("LastChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_changed_at");
+
+                    b.Property<decimal>("TotalExpense")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("total_expense");
+
+                    b.Property<decimal>("TotalIncome")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("total_income");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("LastChangedAt");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("wallet_accounts");
+                });
+
+            modelBuilder.Entity("XovoeJ.Entities.WalletTransaction", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AfterAvailableBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("after_available_balance");
+
+                    b.Property<decimal>("AfterFrozenBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("after_frozen_balance");
+
+                    b.Property<decimal>("BeforeAvailableBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("before_available_balance");
+
+                    b.Property<decimal>("BeforeFrozenBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("before_frozen_balance");
+
+                    b.Property<string>("BusinessNo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("business_no");
+
+                    b.Property<string>("BusinessType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("business_type");
+
+                    b.Property<decimal>("ChangeAvailableBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("change_available_balance");
+
+                    b.Property<decimal>("ChangeFrozenBalance")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("change_frozen_balance");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("direction");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("WalletAccountId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("wallet_account_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessNo");
+
+                    b.HasIndex("BusinessType");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WalletAccountId");
+
+                    b.ToTable("wallet_transactions");
                 });
 
             modelBuilder.Entity("XovoeJ.Entities.WorkflowApprovalRecord", b =>

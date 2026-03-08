@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import messageApi from '@/api/modules/message'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'MessageTaskPage',
@@ -61,26 +63,30 @@ const summaryCards = computed(() => [
   {
     title: '任务总数',
     value: total.value,
+    description: '当前筛选范围内的消息任务总量，帮助判断发送排队规模。',
     icon: 'i-heroicons-solid:paper-airplane',
-    tone: 'bg-primary/8 text-primary',
+    tone: 'blue' as const,
   },
   {
     title: '当前页进行中',
     value: tableData.value.filter(item => item.status === 1).length,
+    description: '代表当前仍在执行中的任务数量，便于观察发送堆积。',
     icon: 'i-heroicons-solid:bolt',
-    tone: 'bg-amber-500/10 text-amber-600',
+    tone: 'amber' as const,
   },
   {
     title: '当前页已成功',
     value: tableData.value.filter(item => item.status === 2).length,
+    description: '用于查看近期发送任务的实际达成情况。',
     icon: 'i-heroicons-solid:check-circle',
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    tone: 'emerald' as const,
   },
   {
     title: '当前页接收人数',
     value: tableData.value.reduce((sum, item) => sum + item.recipientCount, 0),
+    description: '接收规模可以帮助判断这批任务的触达影响范围。',
     icon: 'i-heroicons-solid:users',
-    tone: 'bg-sky-500/10 text-sky-600',
+    tone: 'sky' as const,
   },
 ])
 
@@ -128,6 +134,16 @@ async function handleViewDetail(row: Api.Message.MessageTask) {
   }
 }
 
+async function handleSend(row: Api.Message.MessageTask) {
+  await ElMessageBox.confirm(`确认立即执行消息任务“${row.name}”吗？`, '执行消息任务', {
+    type: 'warning',
+  })
+
+  await messageApi.sendTask(row.id)
+  ElMessage.success('消息任务执行成功')
+  await getTaskList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getTaskList()
@@ -147,24 +163,16 @@ onMounted(() => {
 <template>
   <div class="message-task-page">
     <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <FaCard
+      <AdminMetricCard
         v-for="card in summaryCards"
         :key="card.title"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
     <FaCard class="search-card mb-4">
@@ -177,7 +185,7 @@ onMounted(() => {
       <div class="search-body">
         <div class="search-grid">
           <div class="search-field">
-            <label class="search-label">关键字</label>
+            <label class="search-label">关键词</label>
             <el-input
               v-model="searchForm.keyword"
               placeholder="搜索任务名或模板名"
@@ -233,7 +241,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <div>
             <span class="font-medium">消息任务</span>
-            <span class="ml-2 text-sm text-stone-500">发送队列与重试管理</span>
+            <span class="ml-2 text-sm text-stone-500">消息中心 / 发送队列</span>
           </div>
           <FaButton variant="ghost" @click="getTaskList">
             <template #icon>
@@ -244,10 +252,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-      >
+      <el-table v-loading="loading" :data="tableData">
         <el-table-column prop="name" label="任务名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="templateName" label="模板名称" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">
@@ -279,7 +284,7 @@ onMounted(() => {
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="statusMap[row.status]?.type || 'info'" size="small">
-              {{ statusMap[row.status]?.label || '未知' }}
+              {{ statusMap[row.status]?.label || '未知状态' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -293,14 +298,16 @@ onMounted(() => {
             {{ row.sentAt ? dayjs(row.sentAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:eye" />
-              </template>
-              详情
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton v-if="row.status !== 2" size="sm" @click="handleSend(row)">
+                发送
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                详情
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -318,45 +325,21 @@ onMounted(() => {
       </div>
     </FaCard>
 
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="任务详情"
-      width="720px"
-    >
+    <el-dialog v-model="detailDialogVisible" title="任务详情" width="720px">
       <div v-loading="detailLoading">
         <el-empty v-if="!currentTask" description="暂无任务数据" />
         <div v-else class="space-y-4">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="任务名称">
-              {{ currentTask.name }}
-            </el-descriptions-item>
-            <el-descriptions-item label="模板名称">
-              {{ currentTask.templateName || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="渠道">
-              {{ channelMap[currentTask.channel] || currentTask.channel || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="状态">
-              {{ statusMap[currentTask.status]?.label || '未知' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="触发方式">
-              {{ triggerTypeMap[currentTask.triggerType || ''] || currentTask.triggerType || '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="接收人数">
-              {{ currentTask.recipientCount }}
-            </el-descriptions-item>
-            <el-descriptions-item label="成功数">
-              {{ currentTask.successCount }}
-            </el-descriptions-item>
-            <el-descriptions-item label="失败数">
-              {{ currentTask.failedCount }}
-            </el-descriptions-item>
-            <el-descriptions-item label="计划发送时间">
-              {{ currentTask.scheduledAt ? dayjs(currentTask.scheduledAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="实际发送时间">
-              {{ currentTask.sentAt ? dayjs(currentTask.sentAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
-            </el-descriptions-item>
+            <el-descriptions-item label="任务名称">{{ currentTask.name }}</el-descriptions-item>
+            <el-descriptions-item label="模板名称">{{ currentTask.templateName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="渠道">{{ channelMap[currentTask.channel] || currentTask.channel || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="状态">{{ statusMap[currentTask.status]?.label || '未知状态' }}</el-descriptions-item>
+            <el-descriptions-item label="触发方式">{{ triggerTypeMap[currentTask.triggerType || ''] || currentTask.triggerType || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="接收人数">{{ currentTask.recipientCount }}</el-descriptions-item>
+            <el-descriptions-item label="成功数">{{ currentTask.successCount }}</el-descriptions-item>
+            <el-descriptions-item label="失败数">{{ currentTask.failedCount }}</el-descriptions-item>
+            <el-descriptions-item label="计划发送时间">{{ currentTask.scheduledAt ? dayjs(currentTask.scheduledAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}</el-descriptions-item>
+            <el-descriptions-item label="实际发送时间">{{ currentTask.sentAt ? dayjs(currentTask.sentAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}</el-descriptions-item>
           </el-descriptions>
         </div>
       </div>

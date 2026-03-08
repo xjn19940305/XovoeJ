@@ -45,6 +45,18 @@ namespace XovoeJ.Entities
         [Column("discount_amount", TypeName = "decimal(18,2)")]
         public decimal DiscountAmount { get; set; }
 
+        [MaxLength(64)]
+        [Column("user_coupon_id")]
+        public string? UserCouponId { get; set; }
+
+        [MaxLength(64)]
+        [Column("coupon_template_id")]
+        public string? CouponTemplateId { get; set; }
+
+        [MaxLength(128)]
+        [Column("coupon_name")]
+        public string? CouponName { get; set; }
+
         /// <summary>
         /// 运费
         /// </summary>
@@ -56,6 +68,57 @@ namespace XovoeJ.Entities
         /// </summary>
         [Column("pay_amount", TypeName = "decimal(18,2)")]
         public decimal PayAmount { get; set; }
+
+        /// <summary>
+        /// 关联支付单 ID。
+        /// </summary>
+        [MaxLength(64)]
+        [Column("payment_order_id")]
+        public string? PaymentOrderId { get; set; }
+
+        /// <summary>
+        /// 关联支付单号。
+        /// </summary>
+        [MaxLength(64)]
+        [Column("payment_order_no")]
+        public string? PaymentOrderNo { get; set; }
+
+        /// <summary>
+        /// 实际支付方式快照，例如 wallet。
+        /// </summary>
+        [MaxLength(32)]
+        [Column("payment_method")]
+        public string? PaymentMethod { get; set; }
+
+        /// <summary>
+        /// 钱包支付金额快照。
+        /// </summary>
+        [Column("wallet_pay_amount", TypeName = "decimal(18,2)")]
+        public decimal WalletPayAmount { get; set; }
+
+        /// <summary>
+        /// 订单消耗积分数量快照。
+        /// </summary>
+        [Column("points_used")]
+        public int PointsUsed { get; set; }
+
+        /// <summary>
+        /// 积分抵扣金额快照。
+        /// </summary>
+        [Column("points_deduction_amount", TypeName = "decimal(18,2)")]
+        public decimal PointsDeductionAmount { get; set; }
+
+        /// <summary>
+        /// 订单奖励积分数量快照。
+        /// </summary>
+        [Column("reward_points")]
+        public int RewardPoints { get; set; }
+
+        /// <summary>
+        /// 已退款金额快照。
+        /// </summary>
+        [Column("refunded_amount", TypeName = "decimal(18,2)")]
+        public decimal RefundedAmount { get; set; }
 
         /// <summary>
         /// 订单状态

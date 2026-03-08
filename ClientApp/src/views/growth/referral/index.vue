@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import growthApi from '@/api/modules/growth'
+import AdminMetricCard from '@/components/admin/AdminMetricCard.vue'
 
 defineOptions({
   name: 'GrowthReferralPage',
@@ -44,26 +46,30 @@ const summaryCards = computed(() => [
   {
     title: '邀请关系',
     value: total.value,
+    description: '当前页记录的邀请链路总量，用于判断归因沉淀是否稳定。',
     icon: 'i-heroicons-solid:user-plus',
-    tone: 'bg-primary/8 text-primary',
+    tone: 'blue' as const,
   },
   {
-    title: '当前页已绑定',
+    title: '已完成绑定',
     value: tableData.value.filter(item => item.status === 1).length,
+    description: '已经完成归因绑定的邀请关系，后续可继续观察转化结果。',
     icon: 'i-heroicons-solid:link',
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    tone: 'emerald' as const,
   },
   {
-    title: '当前页待绑定',
+    title: '待确认归因',
     value: tableData.value.filter(item => item.status === 0).length,
+    description: '仍需继续确认来源和绑定状态的邀请关系数量。',
     icon: 'i-heroicons-solid:clock',
-    tone: 'bg-amber-500/10 text-amber-600',
+    tone: 'amber' as const,
   },
   {
-    title: '当前页奖励金额',
+    title: '累计奖励金额',
     value: formatAmount(tableData.value.reduce((sum, item) => sum + (item.totalRewardAmount || 0), 0)),
+    description: '当前列表范围内沉淀的邀请奖励结果，便于联动佣金和分销分析。',
     icon: 'i-heroicons-solid:gift',
-    tone: 'bg-sky-500/10 text-sky-600',
+    tone: 'sky' as const,
   },
 ])
 
@@ -110,6 +116,17 @@ async function handleViewDetail(row: Api.Growth.ReferralRelation) {
   }
 }
 
+async function handleUpdateStatus(row: Api.Growth.ReferralRelation, status: number) {
+  const actionText = status === 1 ? '恢复为已绑定' : status === 2 ? '设为失效' : '设为待绑定'
+  await ElMessageBox.confirm(`确认将邀请关系“${row.inviterName || '-'} -> ${row.inviteeName || '-'}”${actionText}吗？`, '状态变更', {
+    type: 'warning',
+  })
+
+  await growthApi.updateDistributionStatus(row.id, { status })
+  ElMessage.success('邀请关系状态更新成功')
+  await getDistributionList()
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
   getDistributionList()
@@ -122,7 +139,7 @@ function handleSizeChange(size: number) {
 }
 
 function formatAmount(value: number) {
-  return `￥${value.toFixed(2)}`
+  return `¥ ${value.toFixed(2)}`
 }
 
 onMounted(() => {
@@ -132,25 +149,17 @@ onMounted(() => {
 
 <template>
   <div class="growth-referral-page">
-    <div class="grid mb-4 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <FaCard
+    <div class="growth-referral-page__cards">
+      <AdminMetricCard
         v-for="card in summaryCards"
         :key="card.title"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="space-y-1">
-            <p class="text-sm text-stone-500">
-              {{ card.title }}
-            </p>
-            <p class="text-2xl text-stone-900 font-semibold">
-              {{ card.value }}
-            </p>
-          </div>
-          <div class="size-12 flex items-center justify-center rounded-2xl" :class="card.tone">
-            <FaIcon :name="card.icon" class="size-6" />
-          </div>
-        </div>
-      </FaCard>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+        variant="board"
+      />
     </div>
 
     <FaCard class="search-card mb-4">
@@ -269,14 +278,39 @@ onMounted(() => {
             {{ row.invitedAt ? dayjs(row.invitedAt).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
-              <template #icon>
-                <FaIcon name="i-iconoir:eye" />
-              </template>
-              详情
-            </FaButton>
+            <div class="flex flex-wrap justify-end gap-2">
+              <FaButton
+                v-if="row.status !== 1"
+                size="sm"
+                @click="handleUpdateStatus(row, 1)"
+              >
+                设为已绑定
+              </FaButton>
+              <FaButton
+                v-if="row.status !== 0"
+                size="sm"
+                variant="outline"
+                @click="handleUpdateStatus(row, 0)"
+              >
+                设为待绑定
+              </FaButton>
+              <FaButton
+                v-if="row.status !== 2"
+                size="sm"
+                variant="outline"
+                @click="handleUpdateStatus(row, 2)"
+              >
+                失效
+              </FaButton>
+              <FaButton variant="ghost" size="sm" @click="handleViewDetail(row)">
+                <template #icon>
+                  <FaIcon name="i-iconoir:eye" />
+                </template>
+                详情
+              </FaButton>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -339,3 +373,24 @@ onMounted(() => {
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.growth-referral-page__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1200px) {
+  .growth-referral-page__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .growth-referral-page__cards {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

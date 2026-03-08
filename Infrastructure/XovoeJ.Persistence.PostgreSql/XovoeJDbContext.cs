@@ -12,11 +12,17 @@ namespace XovoeJ.Persistence.PostgreSql
         public DbSet<ProductSku> ProductSkus { get; set; }
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
         public DbSet<UserAddress> UserAddresses { get; set; }
+        public DbSet<WalletAccount> WalletAccounts { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<PointsAccount> PointsAccounts { get; set; }
+        public DbSet<PointsLog> PointsLogs { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<PaymentOrder> PaymentOrders { get; set; }
         public DbSet<AfterSaleOrder> AfterSaleOrders { get; set; }
         public DbSet<DictionaryGroup> DictionaryGroups { get; set; }
         public DbSet<DictionaryItem> DictionaryItems { get; set; }
+        public DbSet<Banner> Banners { get; set; }
         public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
         public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
         public DbSet<WorkflowPendingItem> WorkflowPendingItems { get; set; }
@@ -28,6 +34,10 @@ namespace XovoeJ.Persistence.PostgreSql
         public DbSet<ReferralLink> ReferralLinks { get; set; }
         public DbSet<CommissionRecord> CommissionRecords { get; set; }
         public DbSet<CouponTemplate> CouponTemplates { get; set; }
+        public DbSet<UserCoupon> UserCoupons { get; set; }
+        public DbSet<CouponIssueBatch> CouponIssueBatches { get; set; }
+        public DbSet<CouponIssueRecord> CouponIssueRecords { get; set; }
+        public DbSet<MemberLevelRewardRule> MemberLevelRewardRules { get; set; }
         public DbSet<PromotionActivity> PromotionActivities { get; set; }
         public DbSet<SeckillActivity> SeckillActivities { get; set; }
         public DbSet<GroupBuyActivity> GroupBuyActivities { get; set; }
@@ -96,11 +106,46 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(a => a.CreatedAt);
             });
 
+            modelBuilder.Entity<WalletAccount>(build =>
+            {
+                build.HasIndex(a => a.UserId).IsUnique();
+                build.HasIndex(a => a.LastChangedAt);
+                build.HasIndex(a => a.CreatedAt);
+            });
+
+            modelBuilder.Entity<WalletTransaction>(build =>
+            {
+                build.HasIndex(t => t.WalletAccountId);
+                build.HasIndex(t => t.UserId);
+                build.HasIndex(t => t.BusinessType);
+                build.HasIndex(t => t.BusinessNo);
+                build.HasIndex(t => t.CreatedAt);
+                build.HasIndex(t => t.IdempotencyKey).IsUnique();
+            });
+
+            modelBuilder.Entity<PointsAccount>(build =>
+            {
+                build.HasIndex(a => a.UserId).IsUnique();
+                build.HasIndex(a => a.LastChangedAt);
+                build.HasIndex(a => a.CreatedAt);
+            });
+
+            modelBuilder.Entity<PointsLog>(build =>
+            {
+                build.HasIndex(t => t.PointsAccountId);
+                build.HasIndex(t => t.UserId);
+                build.HasIndex(t => t.BusinessType);
+                build.HasIndex(t => t.BusinessNo);
+                build.HasIndex(t => t.CreatedAt);
+                build.HasIndex(t => t.IdempotencyKey).IsUnique();
+            });
+
             // Order 配置
             modelBuilder.Entity<Order>(build =>
             {
                 build.HasIndex(o => o.UserId);
                 build.HasIndex(o => o.OrderNo).IsUnique();
+                build.HasIndex(o => o.PaymentOrderNo);
                 build.HasIndex(o => o.Status);
                 build.HasIndex(o => o.CreatedAt);
                 build.HasIndex(o => o.IsDeleted);
@@ -112,6 +157,17 @@ namespace XovoeJ.Persistence.PostgreSql
             {
                 build.HasIndex(o => o.OrderId);
                 build.HasIndex(o => o.ProductId);
+            });
+
+            modelBuilder.Entity<PaymentOrder>(build =>
+            {
+                build.HasIndex(o => o.PaymentOrderNo).IsUnique();
+                build.HasIndex(o => o.OrderId).IsUnique();
+                build.HasIndex(o => o.OrderNo);
+                build.HasIndex(o => o.UserId);
+                build.HasIndex(o => o.Status);
+                build.HasIndex(o => o.CreatedAt);
+                build.HasIndex(o => o.ExpireAt);
             });
 
             modelBuilder.Entity<AfterSaleOrder>(build =>
@@ -140,6 +196,15 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(i => i.GroupId);
                 build.HasIndex(i => new { i.GroupId, i.Key }).IsUnique();
                 build.HasIndex(i => i.IsEnabled);
+            });
+
+            modelBuilder.Entity<Banner>(build =>
+            {
+                build.HasIndex(i => i.IsEnabled);
+                build.HasIndex(i => i.SortOrder);
+                build.HasIndex(i => i.CreatedAt);
+                build.HasIndex(i => i.StartTime);
+                build.HasIndex(i => i.EndTime);
             });
 
             // WorkflowDefinition 配置
@@ -243,6 +308,39 @@ namespace XovoeJ.Persistence.PostgreSql
                 build.HasIndex(t => t.CreatedAt);
                 build.HasIndex(t => t.StartTime);
                 build.HasIndex(t => t.EndTime);
+            });
+
+            modelBuilder.Entity<UserCoupon>(build =>
+            {
+                build.HasIndex(t => t.UserId);
+                build.HasIndex(t => t.CouponTemplateId);
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => new { t.UserId, t.Status });
+                build.HasIndex(t => t.OrderId);
+                build.HasIndex(t => t.CreatedAt);
+            });
+
+            modelBuilder.Entity<CouponIssueBatch>(build =>
+            {
+                build.HasIndex(t => t.TargetType);
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.CreatedAt);
+            });
+
+            modelBuilder.Entity<CouponIssueRecord>(build =>
+            {
+                build.HasIndex(t => t.BatchId);
+                build.HasIndex(t => t.UserId);
+                build.HasIndex(t => t.CouponTemplateId);
+                build.HasIndex(t => t.UserCouponId);
+                build.HasIndex(t => t.CreatedAt);
+            });
+
+            modelBuilder.Entity<MemberLevelRewardRule>(build =>
+            {
+                build.HasIndex(t => t.LevelCode).IsUnique();
+                build.HasIndex(t => t.Status);
+                build.HasIndex(t => t.Sort);
             });
 
             modelBuilder.Entity<PromotionActivity>(build =>

@@ -50,6 +50,16 @@ const systemRoute: Route.recordMainRaw = {
           },
         },
         {
+          path: 'permission',
+          name: 'SystemPermission',
+          component: () => import('@/views/system/permission/index.vue'),
+          meta: {
+            title: '权限目录',
+            icon: 'i-heroicons-solid:list-bullet',
+            auth: [permissionCodes.admin.role.assignPermissions],
+          },
+        },
+        {
           path: 'role-auth',
           name: 'SystemRoleAuth',
           component: () => import('@/views/system/role-auth/index.vue'),

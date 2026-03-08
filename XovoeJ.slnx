@@ -22,5 +22,8 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/XovoeJ.Api.Tests/XovoeJ.Api.Tests.csproj" />
+  </Folder>
   <Project Path="XovoeJ.Api/XovoeJ.Api.csproj" Id="cfee165e-b75b-4ca3-a742-7d1497bb4527" />
 </Solution>

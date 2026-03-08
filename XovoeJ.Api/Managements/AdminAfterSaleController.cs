@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using XovoeJ.Abstractions.Services;
 using XovoeJ.Api.Swaggers;
 using XovoeJ.Entities;
 using XovoeJ.Enum;
@@ -18,11 +19,13 @@ namespace XovoeJ.Api.Managements
     {
         private readonly XovoeJDbContext _dbContext;
         private readonly ILogger<AdminAfterSaleController> _logger;
+        private readonly IPaymentService _paymentService;
 
-        public AdminAfterSaleController(XovoeJDbContext dbContext, ILogger<AdminAfterSaleController> logger)
+        public AdminAfterSaleController(XovoeJDbContext dbContext, ILogger<AdminAfterSaleController> logger, IPaymentService paymentService)
         {
             _dbContext = dbContext;
             _logger = logger;
+            _paymentService = paymentService;
         }
 
         [HttpGet]
@@ -171,7 +174,9 @@ namespace XovoeJ.Api.Managements
         {
             try
             {
-                var afterSale = await _dbContext.AfterSaleOrders.FirstOrDefaultAsync(item => item.Id == afterSaleId);
+                var afterSale = await _dbContext.AfterSaleOrders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(item => item.Id == afterSaleId);
                 if (afterSale == null)
                 {
                     return NotFound(new { message = "售后单不存在" });
@@ -203,7 +208,9 @@ namespace XovoeJ.Api.Managements
         {
             try
             {
-                var afterSale = await _dbContext.AfterSaleOrders.FirstOrDefaultAsync(item => item.Id == afterSaleId);
+                var afterSale = await _dbContext.AfterSaleOrders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(item => item.Id == afterSaleId);
                 if (afterSale == null)
                 {
                     return NotFound(new { message = "售后单不存在" });
@@ -214,7 +221,9 @@ namespace XovoeJ.Api.Managements
                     return BadRequest(new { message = "当前售后单不可驳回" });
                 }
 
-                var order = await _dbContext.Orders.FirstOrDefaultAsync(item => item.Id == afterSale.OrderId);
+                var order = await _dbContext.Orders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(item => item.Id == afterSale.OrderId);
                 if (order != null && afterSale.Type != 3 && order.Status == OrderStatus.Refunding)
                 {
                     order.Status = (OrderStatus)afterSale.OriginalOrderStatus;
@@ -242,7 +251,9 @@ namespace XovoeJ.Api.Managements
         {
             try
             {
-                var afterSale = await _dbContext.AfterSaleOrders.FirstOrDefaultAsync(item => item.Id == afterSaleId);
+                var afterSale = await _dbContext.AfterSaleOrders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(item => item.Id == afterSaleId);
                 if (afterSale == null)
                 {
                     return NotFound(new { message = "售后单不存在" });
@@ -259,6 +270,7 @@ namespace XovoeJ.Api.Managements
                 }
 
                 var order = await _dbContext.Orders
+                    .AsTracking()
                     .Include(item => item.OrderItems)
                     .FirstOrDefaultAsync(item => item.Id == afterSale.OrderId);
                 if (order == null)
@@ -292,6 +304,8 @@ namespace XovoeJ.Api.Managements
                 afterSale.UpdatedAt = DateTime.UtcNow;
                 afterSale.AuditedAt ??= DateTime.UtcNow;
 
+                await _paymentService.RefundOrderAsync(order, refundAmount, afterSale.AfterSaleNo, request?.AdminRemark);
+
                 order.Status = OrderStatus.Cancelled;
                 order.CancelTime = DateTime.UtcNow;
                 order.UpdatedAt = DateTime.UtcNow;
@@ -312,7 +326,9 @@ namespace XovoeJ.Api.Managements
         {
             try
             {
-                var afterSale = await _dbContext.AfterSaleOrders.FirstOrDefaultAsync(item => item.Id == afterSaleId);
+                var afterSale = await _dbContext.AfterSaleOrders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(item => item.Id == afterSaleId);
                 if (afterSale == null)
                 {
                     return NotFound(new { message = "售后单不存在" });
@@ -338,7 +354,9 @@ namespace XovoeJ.Api.Managements
                     return BadRequest(new { message = "请填写换货运单号" });
                 }
 
-                var order = await _dbContext.Orders.FirstOrDefaultAsync(item => item.Id == afterSale.OrderId);
+                var order = await _dbContext.Orders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(item => item.Id == afterSale.OrderId);
                 if (order != null)
                 {
                     order.Status = (OrderStatus)afterSale.OriginalOrderStatus;

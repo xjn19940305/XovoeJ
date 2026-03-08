@@ -135,6 +135,35 @@ namespace XovoeJ.Api.Managements
             }
         }
 
+        [HttpPost("coupon-templates/{couponTemplateId}/status")]
+        public async Task<IActionResult> UpdateCouponTemplateStatus(string couponTemplateId, [FromBody] UpdatePromotionStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 3)
+                {
+                    return BadRequest(new { message = "优惠券模板状态不合法。" });
+                }
+
+                var template = await _dbContext.CouponTemplates.FirstOrDefaultAsync(item => item.Id == couponTemplateId);
+                if (template == null)
+                {
+                    return NotFound(new { message = "优惠券模板不存在。" });
+                }
+
+                template.Status = request.Status;
+                template.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "优惠券模板状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新优惠券模板状态失败：{CouponTemplateId}", couponTemplateId);
+                return BadRequest(new { message = "更新优惠券模板状态失败。" });
+            }
+        }
+
         [HttpGet("promotions")]
         public async Task<IActionResult> GetPromotions(
             [FromQuery] int page = 1,
@@ -240,6 +269,35 @@ namespace XovoeJ.Api.Managements
             {
                 _logger.LogError(ex, "加载营销活动详情失败：{PromotionId}", promotionId);
                 return BadRequest(new { message = "加载营销活动详情失败。" });
+            }
+        }
+
+        [HttpPost("promotions/{promotionId}/status")]
+        public async Task<IActionResult> UpdatePromotionStatus(string promotionId, [FromBody] UpdatePromotionStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 3)
+                {
+                    return BadRequest(new { message = "营销活动状态不合法。" });
+                }
+
+                var promotion = await _dbContext.PromotionActivities.FirstOrDefaultAsync(item => item.Id == promotionId);
+                if (promotion == null)
+                {
+                    return NotFound(new { message = "营销活动不存在。" });
+                }
+
+                promotion.Status = request.Status;
+                promotion.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "营销活动状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新营销活动状态失败：{PromotionId}", promotionId);
+                return BadRequest(new { message = "更新营销活动状态失败。" });
             }
         }
 
@@ -362,6 +420,35 @@ namespace XovoeJ.Api.Managements
             }
         }
 
+        [HttpPost("seckills/{seckillId}/status")]
+        public async Task<IActionResult> UpdateSeckillStatus(string seckillId, [FromBody] UpdateMarketingStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 2)
+                {
+                    return BadRequest(new { message = "秒杀活动状态不合法。" });
+                }
+
+                var activity = await _dbContext.SeckillActivities.FirstOrDefaultAsync(item => item.Id == seckillId);
+                if (activity == null)
+                {
+                    return NotFound(new { message = "秒杀活动不存在。" });
+                }
+
+                activity.Status = request.Status;
+                activity.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "秒杀活动状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新秒杀活动状态失败：{SeckillId}", seckillId);
+                return BadRequest(new { message = "更新秒杀活动状态失败。" });
+            }
+        }
+
         [HttpGet("group-buys")]
         public async Task<IActionResult> GetGroupBuys(
             [FromQuery] int page = 1,
@@ -479,6 +566,35 @@ namespace XovoeJ.Api.Managements
             }
         }
 
+        [HttpPost("group-buys/{groupBuyId}/status")]
+        public async Task<IActionResult> UpdateGroupBuyStatus(string groupBuyId, [FromBody] UpdateMarketingStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 2)
+                {
+                    return BadRequest(new { message = "拼团活动状态不合法。" });
+                }
+
+                var activity = await _dbContext.GroupBuyActivities.FirstOrDefaultAsync(item => item.Id == groupBuyId);
+                if (activity == null)
+                {
+                    return NotFound(new { message = "拼团活动不存在。" });
+                }
+
+                activity.Status = request.Status;
+                activity.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "拼团活动状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新拼团活动状态失败：{GroupBuyId}", groupBuyId);
+                return BadRequest(new { message = "更新拼团活动状态失败。" });
+            }
+        }
+
         [HttpGet("bargains")]
         public async Task<IActionResult> GetBargains(
             [FromQuery] int page = 1,
@@ -591,6 +707,45 @@ namespace XovoeJ.Api.Managements
                 return BadRequest(new { message = "加载砍价活动详情失败。" });
             }
         }
+
+        [HttpPost("bargains/{bargainId}/status")]
+        public async Task<IActionResult> UpdateBargainStatus(string bargainId, [FromBody] UpdateMarketingStatusRequest request)
+        {
+            try
+            {
+                if (request.Status is < 0 or > 2)
+                {
+                    return BadRequest(new { message = "砍价活动状态不合法。" });
+                }
+
+                var activity = await _dbContext.BargainActivities.FirstOrDefaultAsync(item => item.Id == bargainId);
+                if (activity == null)
+                {
+                    return NotFound(new { message = "砍价活动不存在。" });
+                }
+
+                activity.Status = request.Status;
+                activity.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "砍价活动状态更新成功。" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新砍价活动状态失败：{BargainId}", bargainId);
+                return BadRequest(new { message = "更新砍价活动状态失败。" });
+            }
+        }
+    }
+
+    public sealed class UpdatePromotionStatusRequest
+    {
+        public int Status { get; set; }
+    }
+
+    public sealed class UpdateMarketingStatusRequest
+    {
+        public int Status { get; set; }
     }
 
     public sealed class CouponTemplateDto

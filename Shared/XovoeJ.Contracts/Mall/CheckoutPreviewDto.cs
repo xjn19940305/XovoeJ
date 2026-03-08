@@ -11,6 +11,8 @@ namespace XovoeJ.Contracts.Mall
         public string? AddressId { get; set; }
 
         public string? CouponId { get; set; }
+
+        public string? UserCouponId { get; set; }
     }
 
     public class CheckoutDirectItemDto
@@ -89,6 +91,8 @@ namespace XovoeJ.Contracts.Mall
     public class CheckoutCouponDto
     {
         public string Id { get; set; } = string.Empty;
+
+        public string UserCouponId { get; set; } = string.Empty;
 
         public string Name { get; set; } = string.Empty;
 
